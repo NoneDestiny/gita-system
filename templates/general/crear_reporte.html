@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="es" class="antialiased">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GITA - Creación de Reporte</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; overflow-x: hidden; }
+        
+        *:focus-visible { outline: 2px solid #D97706; outline-offset: 2px; }
+        
+        #sidebar { transition: transform 0.3s ease-in-out; }
+        .rotar-180 { transform: rotate(180deg); }
+        .animate-fade-in { animation: fadeIn 0.2s ease-out forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        textarea::-webkit-scrollbar { width: 8px; }
+        textarea::-webkit-scrollbar-thumb { background-color: #a3a3a3; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-[#303338] text-gray-200 h-screen flex flex-col md:flex-row overflow-hidden relative">
+
+    <!-- CABECERA MÓVIL -->
+    <header class="md:hidden flex items-center justify-between bg-[#2a2d31] p-4 shadow-md z-40 relative">
+        <button id="menuToggleMobile" class="text-white p-2 min-h-[44px] min-w-[44px] focus-visible:ring-2 focus-visible:ring-orange-500 rounded" aria-expanded="false" aria-controls="sidebar" aria-label="Abrir menú de navegación">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+        </button>
+        <h1 class="text-xl font-bold">GITA System</h1>
+        <div class="w-10 h-10 bg-gray-500 rounded-full flex items-center justify-center">👤</div>
+    </header>
+
+    <!-- SIDEBAR / MENÚ LATERAL -->
+    <aside id="sidebar" class="absolute md:relative z-50 w-64 md:w-72 h-full bg-[#303338] border-r border-gray-600 flex flex-col transform -translate-x-full md:translate-x-0">
+        <div class="md:hidden p-4 flex justify-end border-b border-gray-600">
+            <button id="closeSidebar" class="text-gray-400 hover:text-white p-2 min-h-[44px] min-w-[44px]" aria-label="Cerrar menú">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+
+        <nav class="flex-1 p-6 overflow-visible">
+            <div class="relative w-full" id="wrapperDesplegable">
+                <button id="btnMenuPrincipal" aria-expanded="false" aria-controls="contenedorListas" class="w-full flex items-center justify-between bg-[#d9d9d9] text-gray-900 font-bold px-4 py-3 rounded min-h-[44px] hover:bg-gray-300 transition-colors focus:ring-2 focus:ring-orange-500 shadow-md">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                        Menú Principal
+                    </div>
+                    <svg id="iconoDesplegable" class="w-5 h-5 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </button>
+
+                <div id="contenedorListas" class="hidden absolute top-full mt-2 left-0 w-full z-50 bg-[#404348] border border-gray-600 rounded-md shadow-2xl p-3 flex-col gap-3 animate-fade-in">
+                    <div id="menu-cliente" class="menu-group flex flex-col gap-2">
+                        <a href="#" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 border-2 border-orange-500 shadow-sm" aria-current="page">Nuevo reporte (Activo)</a>
+                        <a href="#" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Mis datos</a>
+                        <a href="#" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Histórico</a>
+                        <a href="#" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Mis Equipos</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </aside>
+
+    <div id="sidebarOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden md:hidden"></div>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="flex-1 flex flex-col h-full overflow-y-auto w-full relative">
+        <header class="hidden md:grid grid-cols-3 items-center p-6 bg-[#2a2d31]/40 border-b border-gray-700/50">
+            <div></div>
+            <h1 class="text-2xl font-bold text-white tracking-wider text-center">GITA - Gestor de Incidencias TI</h1>
+            <div class="flex justify-end">
+                <div class="flex items-center gap-3 bg-[#404348] px-4 py-2 rounded-full shadow-md">
+                    <div class="w-10 h-10 bg-gray-300 text-gray-800 rounded-full flex items-center justify-center font-bold">👤</div>
+                    <span class="text-lg font-medium">Usuario</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="flex-1 p-4 md:p-8 flex flex-col max-w-7xl mx-auto w-full gap-6">
+            
+            <!-- Identificador de formulario agregado para capturar el evento submit -->
+            <form id="formReporte" action="#" method="POST" enctype="multipart/form-data" class="w-full flex flex-col gap-8 h-full">
+                
+                <div class="flex flex-col md:flex-row gap-6 md:gap-8 items-start md:items-center">
+                    
+                    <!-- ASUNTO -->
+                    <div class="flex items-center gap-3 w-full md:w-auto">
+                        <label for="asunto" class="font-medium min-w-[70px]">Asunto:</label>
+                        <input type="text" id="asunto" name="asunto" maxlength="20" placeholder="(Asunto Max. 20 caracteres)" 
+                               class="bg-[#e6e6e6] text-gray-900 rounded-full px-4 h-[44px] flex-1 md:w-64 focus:ring-2 focus:ring-orange-500 focus:outline-none placeholder-gray-600 font-medium">
+                    </div>
+
+                    <!-- SERIAL -->
+                    <div class="flex items-center gap-3 w-full md:w-auto relative custom-dropdown-container">
+                        <span class="font-medium min-w-[50px]">Serial:</span>
+                        <input type="hidden" name="serial" value="">
+                        <button type="button" aria-haspopup="listbox" aria-expanded="false" class="custom-dropdown-btn bg-[#e6e6e6] text-gray-900 rounded-full px-4 h-[44px] flex-1 md:w-56 flex items-center justify-center focus:ring-2 focus:ring-orange-500 focus:outline-none font-medium relative">
+                            <span class="selected-text text-gray-600">Seleccione equipo...</span>
+                        </button>
+                        <ul role="listbox" tabindex="-1" class="custom-dropdown-list hidden absolute top-full left-[62px] right-0 mt-2 bg-[#e6e6e6] rounded-md shadow-xl border border-gray-300 overflow-hidden z-50 animate-fade-in text-gray-900 font-medium text-center max-h-48 overflow-y-auto">
+                            <li role="option" data-value="" tabindex="0" class="px-4 py-2 hover:bg-gray-300 cursor-pointer focus:bg-gray-300 focus:outline-none transition-colors border-b border-gray-300 text-gray-600 italic">Seleccione equipo...</li>
+                            <li role="option" data-value="Serial12345" tabindex="0" class="px-4 py-2 hover:bg-gray-300 cursor-pointer focus:bg-gray-300 focus:outline-none transition-colors border-b border-gray-300">Serial12345</li>
+                            <li role="option" data-value="Serial67890" tabindex="0" class="px-4 py-2 hover:bg-gray-300 cursor-pointer focus:bg-gray-300 focus:outline-none transition-colors">Serial67890</li>
+                        </ul>
+                    </div>
+
+                    <!-- CATEGORÍA -->
+                    <div class="flex items-center gap-3 w-full md:w-auto relative custom-dropdown-container">
+                        <span class="font-medium min-w-[80px]">Categoría:</span>
+                        <input type="hidden" name="categoria" value="">
+                        <button type="button" aria-haspopup="listbox" aria-expanded="false" class="custom-dropdown-btn bg-[#e6e6e6] text-gray-900 rounded-full px-4 h-[44px] flex-1 md:w-56 flex items-center justify-center focus:ring-2 focus:ring-orange-500 focus:outline-none font-medium relative">
+                            <span class="selected-text text-gray-600">Seleccione...</span>
+                        </button>
+                        <ul role="listbox" tabindex="-1" class="custom-dropdown-list hidden absolute top-full left-[92px] right-0 mt-2 bg-[#e6e6e6] rounded-md shadow-xl border border-gray-300 overflow-hidden z-50 animate-fade-in text-gray-900 font-medium text-center">
+                            <li role="option" data-value="Software" tabindex="0" class="px-4 py-2 hover:bg-gray-300 cursor-pointer focus:bg-gray-300 focus:outline-none transition-colors border-b border-gray-300">Software</li>
+                            <li role="option" data-value="Hardware" tabindex="0" class="px-4 py-2 hover:bg-gray-300 cursor-pointer focus:bg-gray-300 focus:outline-none transition-colors border-b border-gray-300">Hardware</li>
+                            <li role="option" data-value="Conectividad" tabindex="0" class="px-4 py-2 hover:bg-gray-300 cursor-pointer focus:bg-gray-300 focus:outline-none transition-colors border-b border-gray-300">Conectividad</li>
+                            <li role="option" data-value="Credenciales" tabindex="0" class="px-4 py-2 hover:bg-gray-300 cursor-pointer focus:bg-gray-300 focus:outline-none transition-colors">Credenciales</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- ÁREA INFERIOR: 3 COLUMNAS -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full min-h-[400px]">
+                    
+                    <!-- DESCRIPCIÓN -->
+                    <div class="flex flex-col h-full">
+                        <label for="descripcion" class="mb-2 font-medium">Descripción *:</label>
+                        <textarea id="descripcion" name="descripcion" required class="flex-1 bg-[#e6e6e6] text-gray-900 rounded-xl p-4 focus:ring-2 focus:ring-orange-500 focus:outline-none resize-none font-medium" placeholder="Escriba aquí los detalles del problema..."></textarea>
+                    </div>
+
+                    <!-- REPORTE IA CON FEEDBACK DE CARGA -->
+                    <div class="flex flex-col h-full relative">
+                        <label class="mb-2 font-medium">Reporte Generado por IA:</label>
+                        <div class="flex-1 bg-[#e6e6e6] text-gray-900 rounded-xl p-4 flex flex-col relative" aria-readonly="true">
+                            
+                            <!-- Contenedor del resultado de la IA -->
+                            <div id="resultadoIA" class="space-y-4 font-medium flex-1 text-gray-500 italic text-center mt-10 transition-opacity">
+                                Panel IA en espera de datos...
+                            </div>
+
+                            <div class="absolute bottom-6 left-0 right-0 flex justify-center">
+                                <!-- Botón IA Modificado -->
+                                <button type="button" id="btnGenerarIA" class="bg-[#d47c35] text-gray-900 font-semibold px-6 py-2 rounded-md min-h-[44px] hover:bg-[#b86729] focus:ring-2 focus:ring-white transition-all shadow-md flex items-center justify-center gap-2">
+                                    <span id="textoBtnIA">Generar reporte con IA</span>
+                                    <!-- Spinner oculto por defecto -->
+                                    <svg id="spinnerIA" class="animate-spin hidden h-5 w-5 text-gray-900" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- EVIDENCIAS -->
+                    <div class="flex flex-col h-full pl-0 lg:pl-6 border-l-0 lg:border-l border-gray-600 justify-between">
+                        <div>
+                            <p class="font-medium mb-3">Cargar Evidencia (JPG, PNG, JPEG Max. 5MB *)</p>
+                            
+                            <div class="mb-4 flex items-center justify-between">
+                                <label for="file-upload" class="bg-[#d47c35] text-gray-900 font-semibold px-6 py-2 rounded-md min-h-[44px] inline-flex items-center gap-2 cursor-pointer hover:bg-[#b86729] focus-within:ring-2 focus-within:ring-white transition-colors shadow-md">
+                                    Explorar 
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
+                                    <input id="file-upload" name="evidencias" type="file" class="sr-only" accept=".jpg,.jpeg,.png" multiple>
+                                </label>
+                            </div>
+
+                            <div class="bg-[#e6e6e6] text-gray-900 rounded-xl p-4 shadow-inner min-h-[160px] flex flex-col justify-start relative">
+                                <div id="emptyState" class="text-gray-500 text-sm italic mt-2 text-center my-auto">
+                                    Ningún archivo seleccionado aún.
+                                </div>
+                                <div id="fileListContainer" class="space-y-2"></div>
+
+                                <div id="errorState" class="hidden flex flex-col items-center mt-auto pb-2 pt-4 border-t border-gray-300">
+                                    <p class="text-red-600 font-bold text-xs text-center" role="alert">⚠ Uno o más archivos poseen un formato inválido o exceden 5MB.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 flex justify-center">
+                            <!-- Botón Submit Modificado -->
+                            <button type="submit" id="btnSubmitReporte" class="bg-[#d47c35] text-gray-900 font-semibold px-8 py-3 rounded-md min-h-[44px] hover:bg-[#b86729] focus:ring-2 focus:ring-white transition-all shadow-lg flex items-center justify-center gap-2 w-48">
+                                <span id="textoBtnSubmit">Crear reporte</span>
+                                <!-- Spinner oculto por defecto -->
+                                <svg id="spinnerSubmit" class="animate-spin hidden h-5 w-5 text-gray-900" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            /* === EFECTO DE CARGA PARA BOTÓN DE IA (Simulación Fetch) === */
+            const btnGenerarIA = document.getElementById('btnGenerarIA');
+            const textoBtnIA = document.getElementById('textoBtnIA');
+            const spinnerIA = document.getElementById('spinnerIA');
+            const resultadoIA = document.getElementById('resultadoIA');
+
+            btnGenerarIA.addEventListener('click', () => {
+                // Estado de Carga
+                btnGenerarIA.disabled = true;
+                btnGenerarIA.classList.add('opacity-75', 'cursor-not-allowed');
+                textoBtnIA.textContent = 'Analizando...';
+                spinnerIA.classList.remove('hidden');
+                
+                resultadoIA.classList.add('opacity-50');
+                
+                // Simulación de retraso de red (2 segundos) para el prototipo
+                setTimeout(() => {
+                    // Restaurar botón
+                    btnGenerarIA.disabled = false;
+                    btnGenerarIA.classList.remove('opacity-75', 'cursor-not-allowed');
+                    textoBtnIA.textContent = 'Actualizar IA';
+                    spinnerIA.classList.add('hidden');
+                    
+                    // Mostrar resultados simulados
+                    resultadoIA.classList.remove('opacity-50', 'text-gray-500', 'italic', 'text-center', 'mt-10');
+                    resultadoIA.classList.add('text-gray-900', 'text-left');
+                    resultadoIA.innerHTML = `
+                        <p class="animate-fade-in"><span class="font-bold text-gray-700">Asunto sugerido:</span> Falla de encendido y ruido</p>
+                        <p class="animate-fade-in" style="animation-delay: 100ms;"><span class="font-bold text-gray-700">Categoría Detectada:</span> Hardware</p>
+                        <p class="animate-fade-in text-sm text-gray-700 mt-2 border-t border-gray-400 pt-2" style="animation-delay: 200ms;">
+                            <strong>Síntesis IA:</strong> El usuario reporta que el equipo funcionaba ayer antes de un corte eléctrico. Actualmente presenta pitidos de placa base y ruido anormal de ventilación, lo que sugiere un posible daño en la fuente de poder o saturación térmica.
+                        </p>
+                    `;
+                }, 2000);
+            });
+
+            /* === EFECTO DE CARGA PARA BOTÓN SUBMIT === */
+            const formReporte = document.getElementById('formReporte');
+            const btnSubmitReporte = document.getElementById('btnSubmitReporte');
+            const textoBtnSubmit = document.getElementById('textoBtnSubmit');
+            const spinnerSubmit = document.getElementById('spinnerSubmit');
+            
+            formReporte.addEventListener('submit', (e) => {
+                // Solo para visualizar el efecto de carga en el prototipo, prevenimos el envío real un momento.
+                // En producción con Django, puedes quitar el e.preventDefault() o usar AJAX.
+                e.preventDefault(); 
+                
+                btnSubmitReporte.disabled = true;
+                btnSubmitReporte.classList.add('opacity-75', 'cursor-not-allowed');
+                textoBtnSubmit.textContent = 'Procesando...';
+                spinnerSubmit.classList.remove('hidden');
+
+                // Simulación de envío (Opcional, quitar en producción real para que Django procese el POST normal)
+                setTimeout(() => {
+                    alert("¡Reporte Creado Exitosamente!");
+                    window.location.reload(); // Recarga la vista simulando el redireccionamiento
+                }, 1500);
+            });
+
+
+            /* === VALIDACIÓN DINÁMICA DE ARCHIVOS === */
+            const fileInput = document.getElementById('file-upload');
+            const fileListContainer = document.getElementById('fileListContainer');
+            const emptyState = document.getElementById('emptyState');
+            const errorState = document.getElementById('errorState');
+            
+            const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+            const maxSize = 5 * 1024 * 1024; // 5MB
+            let invalidFilesCount = 0;
+            const dataTransfer = new DataTransfer();
+
+            fileInput.addEventListener('change', function(e) {
+                errorState.classList.add('hidden');
+                let hasError = false;
+                const files = e.target.files;
+
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    if (document.querySelector(`[data-name="${file.name}"]`)) continue; 
+
+                    let isValid = true;
+                    let errorMsg = '';
+
+                    if (!validTypes.includes(file.type)) {
+                        isValid = false;
+                        errorMsg = 'Formato inválido';
+                    } else if (file.size > maxSize) {
+                        isValid = false;
+                        let sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+                        errorMsg = `Excede 5MB (${sizeMB}MB)`;
+                    }
+
+                    if (!isValid) {
+                        invalidFilesCount++;
+                        renderFileItem(file, false, errorMsg);
+                        hasError = true;
+                    } else {
+                        dataTransfer.items.add(file);
+                        renderFileItem(file, true, '');
+                    }
+                }
+
+                if (hasError) errorState.classList.remove('hidden');
+                fileInput.files = dataTransfer.files;
+                checkUIState();
+            });
+
+            function renderFileItem(file, isValid, errorMsg) {
+                const fileDOM = document.createElement('div');
+                fileDOM.dataset.name = file.name;
+                
+                if (isValid) {
+                    fileDOM.className = 'flex items-center justify-between gap-2 p-2 bg-gray-300 rounded-md animate-fade-in shadow-sm border border-transparent';
+                    fileDOM.innerHTML = `
+                        <div class="flex items-center gap-2 overflow-hidden">
+                            <svg class="w-5 h-5 flex-shrink-0 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            <span class="text-xs font-semibold truncate text-gray-800" title="${file.name}">${file.name}</span>
+                        </div>
+                        <button type="button" class="btn-eliminar text-gray-500 hover:text-red-700 hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 rounded p-1 transition-colors flex-shrink-0" aria-label="Eliminar ${file.name}">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    `;
+                } else {
+                    fileDOM.className = 'flex items-center justify-between gap-2 p-2 bg-red-100 rounded-md animate-fade-in shadow-sm border border-red-400';
+                    fileDOM.innerHTML = `
+                        <div class="flex flex-col overflow-hidden w-full">
+                            <div class="flex items-center gap-2">
+                                <svg class="w-5 h-5 flex-shrink-0 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                <span class="text-xs font-bold truncate text-red-800" title="${file.name}">${file.name}</span>
+                            </div>
+                            <span class="text-[10px] text-red-600 font-semibold ml-7">${errorMsg}</span>
+                        </div>
+                        <button type="button" class="btn-eliminar text-red-600 hover:text-white hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-700 rounded p-1 transition-colors flex-shrink-0" aria-label="Eliminar error">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    `;
+                }
+
+                fileDOM.querySelector('.btn-eliminar').addEventListener('click', function() {
+                    fileDOM.remove();
+                    if (isValid) {
+                        for (let i = 0; i < dataTransfer.items.length; i++) {
+                            if (dataTransfer.items[i].getAsFile().name === file.name) {
+                                dataTransfer.items.remove(i);
+                                break;
+                            }
+                        }
+                        fileInput.files = dataTransfer.files;
+                    } else {
+                        invalidFilesCount--;
+                    }
+                    checkUIState();
+                });
+                fileListContainer.appendChild(fileDOM);
+            }
+
+            function checkUIState() {
+                if (fileListContainer.children.length > 0) {
+                    emptyState.classList.add('hidden');
+                } else {
+                    emptyState.classList.remove('hidden');
+                }
+
+                if (invalidFilesCount > 0) {
+                    btnSubmitReporte.disabled = true;
+                    btnSubmitReporte.classList.add('opacity-50', 'cursor-not-allowed');
+                    btnSubmitReporte.classList.remove('hover:bg-[#b86729]');
+                    errorState.classList.remove('hidden');
+                } else {
+                    btnSubmitReporte.disabled = false;
+                    btnSubmitReporte.classList.remove('opacity-50', 'cursor-not-allowed');
+                    btnSubmitReporte.classList.add('hover:bg-[#b86729]');
+                    errorState.classList.add('hidden');
+                }
+            }
+
+            /* === DROPDOWNS Y SIDEBAR (Sin cambios, para no engrosar) === */
+            const dropdownContainers = document.querySelectorAll('.custom-dropdown-container');
+            dropdownContainers.forEach(container => {
+                const btn = container.querySelector('.custom-dropdown-btn');
+                const list = container.querySelector('.custom-dropdown-list');
+                const selectedText = btn.querySelector('.selected-text');
+                const options = list.querySelectorAll('[role="option"]');
+                const hiddenInput = container.querySelector('input[type="hidden"]');
+                let focusedIndex = -1;
+
+                function closeDropdown() { list.classList.add('hidden'); btn.setAttribute('aria-expanded', 'false'); focusedIndex = -1; }
+                function openDropdown() { document.querySelectorAll('.custom-dropdown-list').forEach(l => l.classList.add('hidden')); document.querySelectorAll('.custom-dropdown-btn').forEach(b => b.setAttribute('aria-expanded', 'false')); list.classList.remove('hidden'); btn.setAttribute('aria-expanded', 'true'); }
+
+                btn.addEventListener('click', (e) => { e.stopPropagation(); list.classList.contains('hidden') ? openDropdown() : closeDropdown(); });
+                options.forEach((opcion) => {
+                    opcion.addEventListener('click', () => { selectedText.textContent = opcion.textContent; if(hiddenInput) hiddenInput.value = opcion.dataset.value || opcion.textContent.trim(); selectedText.classList.remove('text-gray-600'); closeDropdown(); });
+                    opcion.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectedText.textContent = opcion.textContent; if(hiddenInput) hiddenInput.value = opcion.dataset.value || opcion.textContent.trim(); selectedText.classList.remove('text-gray-600'); closeDropdown(); btn.focus(); } });
+                });
+
+                btn.addEventListener('keydown', (e) => { if (e.key === 'ArrowDown') { e.preventDefault(); if (list.classList.contains('hidden')) openDropdown(); focusedIndex = 0; options[focusedIndex].focus(); } });
+                list.addEventListener('keydown', (e) => {
+                    if (e.key === 'ArrowDown') { e.preventDefault(); if (focusedIndex < options.length - 1) { focusedIndex++; options[focusedIndex].focus(); } }
+                    else if (e.key === 'ArrowUp') { e.preventDefault(); if (focusedIndex > 0) { focusedIndex--; options[focusedIndex].focus(); } else if (focusedIndex === 0) { closeDropdown(); btn.focus(); } }
+                    else if (e.key === 'Escape') { closeDropdown(); btn.focus(); }
+                });
+            });
+            document.addEventListener('click', () => { document.querySelectorAll('.custom-dropdown-list').forEach(l => l.classList.add('hidden')); document.querySelectorAll('.custom-dropdown-btn').forEach(b => b.setAttribute('aria-expanded', 'false')); });
+
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            const toggleMobile = document.getElementById('menuToggleMobile');
+            const btnMenuPrincipal = document.getElementById('btnMenuPrincipal');
+            const contenedorListas = document.getElementById('contenedorListas');
+            const iconoDesplegable = document.getElementById('iconoDesplegable');
+            const wrapperDesplegable = document.getElementById('wrapperDesplegable');
+
+            btnMenuPrincipal.addEventListener('click', (e) => { e.stopPropagation(); if(contenedorListas.classList.contains('hidden')) { contenedorListas.classList.remove('hidden'); contenedorListas.classList.add('flex'); iconoDesplegable.classList.add('rotar-180'); btnMenuPrincipal.setAttribute('aria-expanded', 'true'); } else { contenedorListas.classList.add('hidden'); contenedorListas.classList.remove('flex'); iconoDesplegable.classList.remove('rotar-180'); btnMenuPrincipal.setAttribute('aria-expanded', 'false'); } });
+            document.addEventListener('click', (e) => { if (!wrapperDesplegable.contains(e.target) && !contenedorListas.classList.contains('hidden')) { contenedorListas.classList.add('hidden'); contenedorListas.classList.remove('flex'); iconoDesplegable.classList.remove('rotar-180'); btnMenuPrincipal.setAttribute('aria-expanded', 'false'); } });
+            
+            function toggleSidebar() { sidebar.classList.toggle('-translate-x-full'); overlay.classList.toggle('hidden'); }
+            toggleMobile.addEventListener('click', toggleSidebar);
+            document.getElementById('closeSidebar').addEventListener('click', toggleSidebar);
+            overlay.addEventListener('click', toggleSidebar);
+        });
+    </script>
+</body>
+</html>
