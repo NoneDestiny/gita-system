@@ -1,14 +1,14 @@
 from django.contrib import admin
 from django.urls import path
 from django.views.generic import RedirectView
+from django.conf import settings
+from django.conf.urls.static import static
 
 from users.views import (
     CustomLoginView,
     logout_view,
     api_login_view,
     error_403_view,
-    # Flujo Cliente
-    cliente_historico_view,
     # Flujo Técnico
     tecnico_tickets_asignados_view,
     tecnico_solucion_caso_view,
@@ -19,8 +19,11 @@ from users.views import (
     gerente_gestion_tecnicos_view,
     # Flujo General
     mis_equipos_view,
-    crear_reporte_view,
     datos_usuario_view,
+)
+from tickets.views import (
+    cliente_historico_view,
+    crear_ticket_view,
 )
 
 urlpatterns = [
@@ -34,6 +37,7 @@ urlpatterns = [
 
     # Rutas protegidas por RBAC - CLIENTE
     path('cliente/historico/', cliente_historico_view, name='cliente_historico'),
+    path('reporte/crear/', crear_ticket_view, name='crear_reporte'),
 
     # Rutas protegidas por RBAC - TÉCNICO
     path('tecnico/tickets-asignados/', tecnico_tickets_asignados_view, name='tecnico_tickets_asignados'),
@@ -47,12 +51,14 @@ urlpatterns = [
 
     # Vistas Generales Autenticadas
     path('equipos/', mis_equipos_view, name='mis_equipos'),
-    path('reporte/crear/', crear_reporte_view, name='crear_reporte'),
     path('perfil/', datos_usuario_view, name='datos_usuario'),
 
     # Panel de Administración de Django
     path('admin/', admin.site.urls),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 # Manejador personalizado para error HTTP 403 Forbidden (RBAC)
 handler403 = error_403_view
