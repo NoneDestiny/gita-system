@@ -4,6 +4,7 @@ from django.utils import timezone
 from django.core.exceptions import ValidationError
 import os
 
+
 class Equipo(models.Model):
     serial = models.CharField(max_length=50, unique=True, verbose_name="Serial / Etiqueta")
     marca = models.CharField(max_length=50)
@@ -77,7 +78,8 @@ class Ticket(models.Model):
     def __str__(self):
         return f"{self.folio} - {self.asunto}"
 
-    # --- VALIDACIÓN DE SEGURIDAD PARA EVIDENCIAS ---
+
+# --- VALIDACIÓN DE SEGURIDAD PARA EVIDENCIAS ---
 def validar_evidencia(file):
     ext = os.path.splitext(file.name)[1].lower()
     valid_extensions = ['.jpg', '.jpeg', '.png']
@@ -87,6 +89,7 @@ def validar_evidencia(file):
     max_size = 5 * 1024 * 1024  # 5 MB
     if file.size > max_size:
         raise ValidationError(f'El archivo excede el límite de 5MB permitido por seguridad.')
+
 
 # --- MODELOS SATÉLITE (BD-04) ---
 
@@ -142,3 +145,39 @@ class Auditoria(models.Model):
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True)
     accion = models.CharField(max_length=255, help_text="Ej: Ticket creado, Evidencia eliminada, etc.")
     fecha_evento = models.DateTimeField(auto_now_add=True)
+
+
+class Notificacion(models.Model):
+    """
+    Registro histórico de correos electrónicos automáticos enviados por el sistema.
+    """
+    TIPO_CHOICES = (
+        ('CREACION', 'Creación de Ticket'),
+        ('ESCALAMIENTO', 'Escalamiento'),
+        ('RESOLUCION', 'Resolución / Cierre'),
+        ('ACTUALIZACION', 'Actualización de Estado'),
+    )
+
+    ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name='notificaciones', null=True, blank=True)
+    destinatario = models.EmailField(verbose_name="Correo Destinatario")
+    usuario_destinatario = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='notificaciones_recibidas'
+    )
+    tipo_evento = models.CharField(max_length=20, choices=TIPO_CHOICES, default='CREACION')
+    asunto = models.CharField(max_length=255)
+    cuerpo_html = models.TextField()
+    fecha_envio = models.DateTimeField(auto_now_add=True)
+    exitoso = models.BooleanField(default=True)
+    error_log = models.TextField(blank=True, null=True)
+
+    class Meta:
+        verbose_name = "Notificación de Correo"
+        verbose_name_plural = "Notificaciones de Correo"
+        ordering = ['-fecha_envio']
+
+    def __str__(self):
+        return f"[{self.tipo_evento}] {self.asunto} -> {self.destinatario}"

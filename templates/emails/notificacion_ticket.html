@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ titulo_notificacion }} - GITA System</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #212327;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: #E5E7EB;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #303338;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #4B5563;
+        }
+        .header {
+            background-color: #25272B;
+            padding: 24px 30px;
+            text-align: center;
+            border-bottom: 2px solid #D47C35;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 26px;
+            color: #FFFFFF;
+            letter-spacing: 2px;
+        }
+        .header p {
+            margin: 4px 0 0;
+            color: #9CA3AF;
+            font-size: 13px;
+            letter-spacing: 4px;
+        }
+        .body {
+            padding: 30px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 9999px;
+            font-weight: bold;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 16px;
+        }
+        .badge-creacion { background-color: #1E3A8A; color: #93C5FD; }
+        .badge-escalamiento { background-color: #78350F; color: #FCD34D; }
+        .badge-resolucion { background-color: #064E3B; color: #6EE7B7; }
+        .badge-actualizacion { background-color: #374151; color: #D1D5DB; }
+
+        .title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #FFFFFF;
+            margin: 0 0 12px;
+        }
+        .subtitle {
+            font-size: 14px;
+            color: #9CA3AF;
+            line-height: 1.5;
+            margin-bottom: 24px;
+        }
+        .ticket-card {
+            background-color: #3E4249;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 24px;
+            border-left: 4px solid #D47C35;
+        }
+        .ticket-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid #4B5563;
+            font-size: 14px;
+        }
+        .ticket-row:last-child {
+            border-bottom: none;
+        }
+        .ticket-label {
+            color: #9CA3AF;
+            font-weight: 500;
+        }
+        .ticket-value {
+            color: #FFFFFF;
+            font-weight: 600;
+            text-align: right;
+        }
+        .cta-container {
+            text-align: center;
+            margin: 30px 0 10px;
+        }
+        .cta-btn {
+            background-color: #D47C35;
+            color: #111827 !important;
+            text-decoration: none;
+            font-weight: 700;
+            padding: 12px 28px;
+            border-radius: 6px;
+            display: inline-block;
+            font-size: 14px;
+        }
+        .footer {
+            background-color: #25272B;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #6B7280;
+            border-top: 1px solid #374151;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- CABECERA GITA -->
+        <div class="header">
+            <h1>GITA</h1>
+            <p>SYSTEM</p>
+        </div>
+
+        <!-- CONTENIDO -->
+        <div class="body">
+            <span class="badge badge-{{ tipo_badge|default:'creacion' }}">
+                {{ tipo_evento_display }}
+            </span>
+
+            <h2 class="title">{{ titulo_notificacion }}</h2>
+            <p class="subtitle">{{ mensaje_introductorio }}</p>
+
+            <!-- DETALLES DEL TICKET -->
+            <div class="ticket-card">
+                <div class="ticket-row">
+                    <span class="ticket-label">Folio:</span>
+                    <span class="ticket-value">{{ ticket.folio }}</span>
+                </div>
+                <div class="ticket-row">
+                    <span class="ticket-label">Asunto:</span>
+                    <span class="ticket-value">{{ ticket.asunto }}</span>
+                </div>
+                <div class="ticket-row">
+                    <span class="ticket-label">Estado:</span>
+                    <span class="ticket-value">{{ ticket.estado.nombre }}</span>
+                </div>
+                <div class="ticket-row">
+                    <span class="ticket-label">Prioridad:</span>
+                    <span class="ticket-value">{{ ticket.prioridad.nombre }}</span>
+                </div>
+                <div class="ticket-row">
+                    <span class="ticket-label">Categoría:</span>
+                    <span class="ticket-value">{{ ticket.categoria.nombre }}</span>
+                </div>
+                <div class="ticket-row">
+                    <span class="ticket-label">Equipo:</span>
+                    <span class="ticket-value">{{ ticket.equipo.marca }} {{ ticket.equipo.modelo }} ({{ ticket.equipo.serial }})</span>
+                </div>
+                <div class="ticket-row">
+                    <span class="ticket-label">Fecha:</span>
+                    <span class="ticket-value">{{ ticket.fecha_creacion|date:"d/m/Y H:i" }}</span>
+                </div>
+            </div>
+
+            {% if mensaje_extra %}
+            <div style="background-color: #2D3035; border-radius: 6px; padding: 14px; margin-bottom: 20px; font-size: 13px; color: #D1D5DB;">
+                <strong>Nota adicional:</strong> {{ mensaje_extra }}
+            </div>
+            {% endif %}
+
+            <div class="cta-container">
+                <a href="{{ enlace_ticket|default:'http://127.0.0.1:8000/login/' }}" class="cta-btn">
+                    Acceder al Sistema
+                </a>
+            </div>
+        </div>
+
+        <!-- PIE DE CORREO -->
+        <div class="footer">
+            Este es un correo automático generado por GITA System. Por favor no responda a este mensaje.<br>
+            &copy; {% now "Y" %} GITA System - Gestión de Incidencias IT.
+        </div>
+    </div>
+</body>
+</html>

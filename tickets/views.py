@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError
 from users.permissions import cliente_required
 from catalogos.models import Categoria, EstadoTicket, Prioridad
 from .models import Ticket, Equipo, Evidencia, validar_evidencia
+from .emails import notificar_ticket_segundo_plano
 
 
 @cliente_required
@@ -157,6 +158,9 @@ def crear_ticket_view(request):
                     archivo=archivo,
                     subido_por=request.user
                 )
+
+            # 5. Enviar notificación por correo en segundo plano (Asíncrono)
+            notificar_ticket_segundo_plano(ticket, 'CREACION')
 
             messages.success(request, f"¡Ticket registrado con éxito! Folio generado: {ticket.folio}")
             return redirect('cliente_historico')

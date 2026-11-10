@@ -1,9 +1,12 @@
-from django.test import TestCase, Client
+import time
+from django.test import TestCase, Client, override_settings
 from django.urls import reverse
+from django.core import mail
 from django.core.files.uploadedfile import SimpleUploadedFile
 from users.models import CustomUser
 from catalogos.models import Categoria, EstadoTicket, Prioridad
-from tickets.models import Ticket, Equipo, Evidencia
+from tickets.models import Ticket, Equipo, Evidencia, Notificacion
+from tickets.emails import notificar_ticket_segundo_plano, _enviar_correo_tarea
 
 
 class ClienteTicketMVTTestCase(TestCase):
@@ -12,6 +15,7 @@ class ClienteTicketMVTTestCase(TestCase):
     1. Validación Multimedia Estricta (formato JPG/PNG/JPEG y máx 5MB).
     2. Generación de Código Único (Folio) y estado inicial automático.
     3. Motor de Búsqueda y Filtros en la vista de seguimiento.
+    4. Notificaciones por Correo Electrónico y registro histórico en BD.
     """
 
     def setUp(self):
@@ -65,7 +69,6 @@ class ClienteTicketMVTTestCase(TestCase):
             'categoria': self.categoria_soft.nombre,
             'evidencias': archivo_invalido
         })
-        # Debe fallar y no crear ningún ticket
         self.assertEqual(Ticket.objects.count(), 0)
 
     def test_evidencia_exceso_tamano_rechazada(self):
@@ -146,7 +149,6 @@ class ClienteTicketMVTTestCase(TestCase):
             prioridad=self.prioridad_media,
             estado=self.estado_proceso,
         )
-        # Ticket de otro cliente (no debe aparecer)
         Ticket.objects.create(
             asunto='Ticket ajeno',
             descripcion='No debe ser visible para este usuario',
@@ -157,21 +159,70 @@ class ClienteTicketMVTTestCase(TestCase):
             estado=self.estado_creado,
         )
 
-        # 1. Sin filtros: debe ver solo sus 2 tickets
         resp = self.client.get(reverse('cliente_historico'))
         self.assertEqual(resp.context['total_tickets'], 2)
 
-        # 2. Búsqueda por texto (query ?q=Monitor)
         resp_q = self.client.get(reverse('cliente_historico'), {'q': 'Monitor'})
         self.assertEqual(resp_q.context['total_tickets'], 1)
         self.assertEqual(resp_q.context['tickets'][0].asunto, 'Monitor parpadea')
 
-        # 3. Filtro por Estado (?estado=EN_PROCESO)
         resp_est = self.client.get(reverse('cliente_historico'), {'estado': 'EN_PROCESO'})
         self.assertEqual(resp_est.context['total_tickets'], 1)
         self.assertEqual(resp_est.context['tickets'][0].asunto, 'Error en Excel')
 
-        # 4. Filtro por Categoría (?categoria=Hardware)
         resp_cat = self.client.get(reverse('cliente_historico'), {'categoria': 'Hardware'})
         self.assertEqual(resp_cat.context['total_tickets'], 1)
         self.assertEqual(resp_cat.context['tickets'][0].asunto, 'Monitor parpadea')
+
+    # --------------------------------------------------------------------------
+    # CRITERIO 4: Notificaciones por Correo Electrónico y Registro Histórico
+    # --------------------------------------------------------------------------
+    @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+    def test_envio_notificacion_y_registro_historico(self):
+        """El envío de correo genera registro en Notificacion con HTML y envía email."""
+        ticket = Ticket.objects.create(
+            asunto='Impresora sin tóner',
+            descripcion='Reemplazo urgente en piso 3',
+            usuario=self.cliente,
+            equipo=self.equipo,
+            categoria=self.categoria_hard,
+            prioridad=self.prioridad_media,
+            estado=self.estado_creado,
+        )
+
+        # Enviar notificación de creación
+        notificar_ticket_segundo_plano(ticket, 'CREACION', async_mode=False)
+
+        # Verificar envío de correo
+        self.assertGreaterEqual(len(mail.outbox), 1)
+        email_enviado = mail.outbox[-1]
+        self.assertIn(ticket.folio, email_enviado.subject)
+        self.assertIn(self.cliente.email, email_enviado.to)
+
+        # Verificar registro histórico en Base de Datos
+        notif_db = Notificacion.objects.filter(ticket=ticket, tipo_evento='CREACION').first()
+        self.assertIsNotNone(notif_db)
+        self.assertEqual(notif_db.destinatario, self.cliente.email)
+        self.assertTrue(notif_db.exitoso)
+        self.assertIn(ticket.folio, notif_db.cuerpo_html)
+
+    @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+    def test_notificacion_resolucion_y_escalamiento(self):
+        """Comprobar notificaciones para eventos de resolución y escalamiento."""
+        ticket = Ticket.objects.create(
+            asunto='Falla de Servidor',
+            descripcion='Servicio caído',
+            usuario=self.cliente,
+            equipo=self.equipo,
+            categoria=self.categoria_soft,
+            prioridad=self.prioridad_media,
+            estado=self.estado_creado,
+        )
+
+        # Escalamiento
+        notificar_ticket_segundo_plano(ticket, 'ESCALAMIENTO', mensaje_extra="Escalado a Nivel 2", async_mode=False)
+        self.assertTrue(Notificacion.objects.filter(ticket=ticket, tipo_evento='ESCALAMIENTO').exists())
+
+        # Resolución
+        notificar_ticket_segundo_plano(ticket, 'RESOLUCION', mensaje_extra="Reemplazado servicio", async_mode=False)
+        self.assertTrue(Notificacion.objects.filter(ticket=ticket, tipo_evento='RESOLUCION').exists())

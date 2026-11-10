@@ -7,7 +7,8 @@ from .models import (
     Escalamiento, 
     Asignacion, 
     CambioEstado, 
-    Auditoria
+    Auditoria,
+    Notificacion
 )
 
 @admin.register(Equipo)
@@ -64,10 +65,21 @@ class AuditoriaAdmin(admin.ModelAdmin):
     list_display = ('ticket', 'accion', 'usuario', 'fecha_evento')
     list_filter = ('fecha_evento',)
     search_fields = ('ticket__folio', 'accion', 'usuario__username')
-    # Protegemos los logs para que ni siquiera el superusuario pueda alterarlos desde el panel
     readonly_fields = ('ticket', 'usuario', 'accion', 'fecha_evento')
 
-    # Bloqueamos la eliminación y modificación desde el admin para mantener la integridad CIA
+    def has_change_permission(self, request, obj=None):
+        return False
+    
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+@admin.register(Notificacion)
+class NotificacionAdmin(admin.ModelAdmin):
+    list_display = ('ticket', 'tipo_evento', 'destinatario', 'asunto', 'fecha_envio', 'exitoso')
+    list_filter = ('tipo_evento', 'exitoso', 'fecha_envio')
+    search_fields = ('ticket__folio', 'destinatario', 'asunto')
+    readonly_fields = ('ticket', 'destinatario', 'usuario_destinatario', 'tipo_evento', 'asunto', 'cuerpo_html', 'fecha_envio', 'exitoso', 'error_log')
+
     def has_change_permission(self, request, obj=None):
         return False
     
