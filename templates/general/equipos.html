@@ -53,12 +53,27 @@
                 <!-- OVERLAY FLOTANTE DE MENÚ -->
                 <div id="contenedorListas" class="hidden absolute top-full mt-2 left-0 w-full z-50 bg-[#404348] border border-gray-600 rounded-md shadow-2xl p-3 flex-col gap-3 animate-fade-in">
                     
-                    <!-- Lista CLIENTE (Mis Equipos Activo) -->
                     <div id="menu-cliente" class="menu-group flex flex-col gap-2">
-                        <a href="#" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Nuevo reporte</a>
-                        <a href="#" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Mis datos</a>
-                        <a href="#" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Histórico</a>
-                        <a href="#" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 border-2 border-orange-500 shadow-sm" aria-current="page">Mis Equipos (Activo)</a>
+                        {% if request.user.rol == 'TECNICO' %}
+                        <a href="{% url 'tecnico_tickets_asignados' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Tickets asignados</a>
+                        <a href="{% url 'crear_reporte' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Nuevo Reporte</a>
+                        <a href="{% url 'tecnico_historial' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Histórico</a>
+                        <a href="{% url 'datos_usuario' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Mis datos</a>
+                        <a href="{% url 'mis_equipos' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 border-2 border-orange-500 shadow-sm" aria-current="page">Mis Equipos (Activo)</a>
+                        {% elif request.user.rol == 'GERENTE' %}
+                        <a href="{% url 'gerente_dashboard' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Dashboard</a>
+                        <a href="{% url 'gerente_gestion_tecnicos' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Gestión técnicos</a>
+                        <a href="{% url 'gerente_inventario' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Inventario</a>
+                        <a href="{% url 'crear_reporte' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Nuevo Reporte</a>
+                        <a href="{% url 'datos_usuario' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Mis datos</a>
+                        <a href="{% url 'mis_equipos' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 border-2 border-orange-500 shadow-sm" aria-current="page">Mis Equipos (Activo)</a>
+                        {% else %}
+                        <a href="{% url 'crear_reporte' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Nuevo reporte</a>
+                        <a href="{% url 'datos_usuario' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Mis datos</a>
+                        <a href="{% url 'cliente_historico' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Histórico</a>
+                        <a href="{% url 'mis_equipos' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 border-2 border-orange-500 shadow-sm" aria-current="page">Mis Equipos (Activo)</a>
+                        {% endif %}
+                        <a href="{% url 'logout' %}" class="bg-red-800 text-white font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-red-700 transition-colors shadow-sm mt-2">Cerrar Sesión</a>
                     </div>
                 </div>
             </div>
@@ -79,7 +94,8 @@
             <div class="flex justify-end">
                 <div class="flex items-center gap-3 bg-[#404348] px-4 py-2 rounded-full shadow-md">
                     <div class="w-10 h-10 bg-gray-300 text-gray-800 rounded-full flex items-center justify-center font-bold">👤</div>
-                    <span class="text-lg font-medium">Usuario</span>
+                    <span class="text-lg font-medium">{{ request.user.username }}</span>
+                    <a href="{% url 'logout' %}" class="text-xs text-red-400 hover:text-red-300 underline ml-2" title="Cerrar sesión">Salir</a>
                 </div>
             </div>
         </header>
@@ -89,75 +105,24 @@
             
             <h2 class="text-2xl md:text-3xl font-bold text-white mb-6 md:mb-8">Mis Equipos:</h2>
 
-            <!-- CUADRÍCULA RESPONSIVA (GRID) -->
-            <!-- grid-cols-1 (Móvil) -> md:grid-cols-2 (Tableta) -> lg:grid-cols-3 (Escritorio) -->
+            <!-- CUADRÍCULA RESPONSIVA (GRID DINÁMICO) -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                
-                <!-- Tarjeta 1: Semántica <article> con tabindex para accesibilidad -->
+                {% for eq in equipos %}
                 <article tabindex="0" class="bg-[#e6e6e6] text-gray-900 p-5 md:p-6 rounded-xl shadow-md hover:shadow-lg hover:-translate-y-1 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-orange-500 cursor-pointer">
-                    <h3 class="text-lg font-semibold mb-3 border-b border-gray-300 pb-2">Equipo PC</h3>
+                    <h3 class="text-lg font-semibold mb-3 border-b border-gray-300 pb-2">{{ eq.marca }} {{ eq.modelo }}</h3>
                     <div class="space-y-1.5 text-[15px]">
-                        <p><span class="font-medium text-gray-700">Serial:</span> (DeEmpresa)</p>
-                        <p><span class="font-medium text-gray-700">Marca:</span> VIT</p>
-                        <p><span class="font-medium text-gray-700">Modelo:</span> ABCD-4</p>
-                        <p><span class="font-medium text-gray-700">Estado:</span> Activo</p>
+                        <p><span class="font-medium text-gray-700">Serial:</span> <span class="font-bold text-orange-600">{{ eq.serial }}</span></p>
+                        <p><span class="font-medium text-gray-700">Marca:</span> {{ eq.marca }}</p>
+                        <p><span class="font-medium text-gray-700">Modelo:</span> {{ eq.modelo }}</p>
+                        <p><span class="font-medium text-gray-700">Estado:</span> <span class="text-green-700 font-semibold">● Operativo</span></p>
                     </div>
                 </article>
-
-                <!-- Tarjeta 2 -->
-                <article tabindex="0" class="bg-[#e6e6e6] text-gray-900 p-5 md:p-6 rounded-xl shadow-md hover:shadow-lg hover:-translate-y-1 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-orange-500 cursor-pointer">
-                    <h3 class="text-lg font-semibold mb-3 border-b border-gray-300 pb-2">Mouse/Ratón</h3>
-                    <div class="space-y-1.5 text-[15px]">
-                        <p><span class="font-medium text-gray-700">Serial:</span> (DeEmpresa)</p>
-                        <p><span class="font-medium text-gray-700">Marca:</span> Redragon</p>
-                        <p><span class="font-medium text-gray-700">Modelo:</span> ABCD-4</p>
-                        <p><span class="font-medium text-gray-700">Estado:</span> Activo</p>
-                    </div>
-                </article>
-
-                <!-- Tarjeta 3 -->
-                <article tabindex="0" class="bg-[#e6e6e6] text-gray-900 p-5 md:p-6 rounded-xl shadow-md hover:shadow-lg hover:-translate-y-1 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-orange-500 cursor-pointer">
-                    <h3 class="text-lg font-semibold mb-3 border-b border-gray-300 pb-2">Equipo PC</h3>
-                    <div class="space-y-1.5 text-[15px]">
-                        <p><span class="font-medium text-gray-700">Serial:</span> (DeEmpresa)</p>
-                        <p><span class="font-medium text-gray-700">Marca:</span> VIT</p>
-                        <p><span class="font-medium text-gray-700">Modelo:</span> ABCD-4</p>
-                        <p><span class="font-medium text-gray-700">Estado:</span> Activo</p>
-                    </div>
-                </article>
-
-                <!-- Tarjeta 4 -->
-                <article tabindex="0" class="bg-[#e6e6e6] text-gray-900 p-5 md:p-6 rounded-xl shadow-md hover:shadow-lg hover:-translate-y-1 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-orange-500 cursor-pointer">
-                    <h3 class="text-lg font-semibold mb-3 border-b border-gray-300 pb-2">Monitor</h3>
-                    <div class="space-y-1.5 text-[15px]">
-                        <p><span class="font-medium text-gray-700">Serial:</span> (DeEmpresa)</p>
-                        <p><span class="font-medium text-gray-700">Marca:</span> Panama</p>
-                        <p><span class="font-medium text-gray-700">Modelo:</span> ABCD-4</p>
-                        <p><span class="font-medium text-gray-700">Estado:</span> Activo</p>
-                    </div>
-                </article>
-
-                <!-- Tarjeta 5 -->
-                <article tabindex="0" class="bg-[#e6e6e6] text-gray-900 p-5 md:p-6 rounded-xl shadow-md hover:shadow-lg hover:-translate-y-1 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-orange-500 cursor-pointer">
-                    <h3 class="text-lg font-semibold mb-3 border-b border-gray-300 pb-2">Teclado</h3>
-                    <div class="space-y-1.5 text-[15px]">
-                        <p><span class="font-medium text-gray-700">Serial:</span> (DeEmpresa)</p>
-                        <p><span class="font-medium text-gray-700">Marca:</span> Dinamarca</p>
-                        <p><span class="font-medium text-gray-700">Modelo:</span> ABCD-4</p>
-                        <p><span class="font-medium text-gray-700">Estado:</span> Activo</p>
-                    </div>
-                </article>
-
-                <!-- Tarjeta 6 -->
-                <article tabindex="0" class="bg-[#e6e6e6] text-gray-900 p-5 md:p-6 rounded-xl shadow-md hover:shadow-lg hover:-translate-y-1 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-orange-500 cursor-pointer">
-                    <h3 class="text-lg font-semibold mb-3 border-b border-gray-300 pb-2">Equipo PC</h3>
-                    <div class="space-y-1.5 text-[15px]">
-                        <p><span class="font-medium text-gray-700">Serial:</span> (DeEmpresa)</p>
-                        <p><span class="font-medium text-gray-700">Marca:</span> VIT</p>
-                        <p><span class="font-medium text-gray-700">Modelo:</span> ABCD-4</p>
-                        <p><span class="font-medium text-gray-700">Estado:</span> Activo</p>
-                    </div>
-                </article>
+                {% empty %}
+                <div class="col-span-full bg-[#404348] text-gray-300 p-8 rounded-xl text-center border border-gray-600">
+                    <p class="text-lg font-medium">No hay equipos registrados en el sistema.</p>
+                </div>
+                {% endfor %}
+            </div>
 
             </div>
 

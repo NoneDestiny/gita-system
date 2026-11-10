@@ -64,30 +64,33 @@
                     
                     <!-- Lista 1: CLIENTE -->
                     <div id="menu-cliente" class="menu-group flex flex-col gap-2">
-                        <a href="#" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Nuevo reporte</a>
-                        <a href="#" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 border-2 border-orange-500 shadow-sm">Mis datos (Activo)</a>
-                        <a href="#" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Histórico</a>
-                        <a href="#" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Mis Equipos</a>
+                        <a href="{% url 'crear_reporte' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Nuevo reporte</a>
+                        <a href="{% url 'datos_usuario' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 border-2 border-orange-500 shadow-sm">Mis datos (Activo)</a>
+                        <a href="{% url 'cliente_historico' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Histórico</a>
+                        <a href="{% url 'mis_equipos' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Mis Equipos</a>
+                        <a href="{% url 'logout' %}" class="bg-red-800 text-white font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-red-700 transition-colors shadow-sm mt-2">Cerrar Sesión</a>
                     </div>
 
                     <!-- Lista 2: TÉCNICO -->
                     <div id="menu-tecnico" class="menu-group hidden flex-col gap-2">
-                        <a href="#" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Tickets asignados</a>
-                        <a href="#" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Nuevo Reporte</a>
-                        <a href="#" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Histórico</a>
-                        <a href="#" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 border-2 border-orange-500 shadow-sm">Mis datos</a>
-                        <a href="#" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Mis Equipos</a>
+                        <a href="{% url 'tecnico_tickets_asignados' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Tickets asignados</a>
+                        <a href="{% url 'crear_reporte' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Nuevo Reporte</a>
+                        <a href="{% url 'tecnico_historial' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Histórico</a>
+                        <a href="{% url 'datos_usuario' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 border-2 border-orange-500 shadow-sm">Mis datos</a>
+                        <a href="{% url 'mis_equipos' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Mis Equipos</a>
+                        <a href="{% url 'logout' %}" class="bg-red-800 text-white font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-red-700 transition-colors shadow-sm mt-2">Cerrar Sesión</a>
                     </div>
 
                     <!-- Lista 3: GERENTE -->
                     <div id="menu-gerente" class="menu-group hidden flex-col gap-2">
-                        <a href="#" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Dashboard</a>
-                        <a href="#" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Gestor de técnicos</a>
-                        <a href="#" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Nuevo Reporte</a>
-                        <a href="#" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Inventario</a>
-                        <a href="#" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Histórico</a>
-                        <a href="#" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 border-2 border-orange-500 shadow-sm">Mis datos</a>
-                        <a href="#" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Mis Equipos</a>
+                        <a href="{% url 'gerente_dashboard' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Dashboard</a>
+                        <a href="{% url 'gerente_gestion_tecnicos' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Gestor de técnicos</a>
+                        <a href="{% url 'crear_reporte' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Nuevo Reporte</a>
+                        <a href="{% url 'gerente_inventario' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Inventario</a>
+                        <a href="{% url 'cliente_historico' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Histórico</a>
+                        <a href="{% url 'datos_usuario' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 border-2 border-orange-500 shadow-sm">Mis datos</a>
+                        <a href="{% url 'mis_equipos' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Mis Equipos</a>
+                        <a href="{% url 'logout' %}" class="bg-red-800 text-white font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-red-700 transition-colors shadow-sm mt-2">Cerrar Sesión</a>
                     </div>
                 </div>
             </div>
@@ -110,78 +113,74 @@
             <div class="flex justify-end">
                 <div class="flex items-center gap-3 bg-[#404348] px-4 py-2 rounded-full shadow-md">
                     <div class="w-10 h-10 bg-gray-300 text-gray-800 rounded-full flex items-center justify-center font-bold">👤</div>
-                    <span id="userRoleDisplay" class="text-lg font-medium">Usuario</span>
+                    <span id="userRoleDisplay" class="text-lg font-medium">{{ request.user.username }} ({{ request.user.rol }})</span>
+                    <a href="{% url 'logout' %}" class="text-xs text-red-400 hover:text-red-300 underline ml-2" title="Cerrar sesión">Salir</a>
                 </div>
             </div>
         </header>
 
         <!-- Contenedor del Formulario centrado -->
-        <div class="flex-1 p-4 md:p-8 flex items-center justify-center w-full">
+        <div class="flex-1 p-4 md:p-8 flex flex-col items-center justify-center w-full">
+            {% if messages %}
+            <div class="max-w-5xl w-full mb-4 space-y-2">
+                {% for message in messages %}
+                <div class="p-4 rounded-lg font-semibold text-sm {% if message.tags == 'error' %}bg-red-500/20 text-red-300 border border-red-500/50{% else %}bg-green-500/20 text-green-300 border border-green-500/50{% endif %}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
             <div class="max-w-5xl w-full flex flex-col md:flex-row gap-6 justify-center items-center md:items-start">
                 
                 <!-- Componente Calendario (Simulado) -->
                 <div class="bg-[#d9d9d9] text-gray-900 rounded-xl p-4 w-full md:w-80 flex-shrink-0 shadow-lg">
                     <p class="text-xs text-gray-600 mb-1">Select date</p>
                     <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-2xl font-semibold">Mon, Aug 17</h2>
+                        <h2 class="text-2xl font-semibold">Hoy</h2>
                         <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                     </div>
                     <div class="flex justify-between items-center mb-4 text-sm font-medium">
-                        <span>August 2026 ▾</span>
-                        <div class="flex gap-2">
-                            <button class="p-1 hover:text-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 rounded">&lt;</button>
-                            <button class="p-1 hover:text-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 rounded">&gt;</button>
-                        </div>
+                        <span>Sesión Activa</span>
                     </div>
-                    <div class="grid grid-cols-7 text-center text-sm mb-2 text-gray-600">
-                        <div>S</div><div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div>
-                    </div>
-                    <div class="grid grid-cols-7 text-center text-sm gap-y-3 font-medium">
-                        <div class="text-gray-400"></div><div>1</div><div>2</div><div>3</div><div>4</div>
-                        <div class="w-8 h-8 mx-auto rounded-full border border-gray-400 flex items-center justify-center cursor-pointer hover:bg-gray-300">5</div>
-                        <div>6</div><div>7</div><div>8</div><div>9</div><div>10</div><div>11</div><div>12</div>
-                        <div>13</div><div>14</div><div>15</div><div>16</div>
-                        <div class="w-8 h-8 mx-auto rounded-full bg-[#303338] text-white flex items-center justify-center shadow-md">17</div>
-                        <div>18</div><div>19</div><div>20</div><div>21</div>
-                    </div>
-                    <div class="flex justify-between mt-6 text-sm font-semibold">
-                        <button class="hover:text-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 rounded p-1">Clear</button>
-                        <div class="space-x-4">
-                            <button class="hover:text-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 rounded p-1">Cancel</button>
-                            <button class="hover:text-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 rounded p-1">OK</button>
-                        </div>
+                    <div class="p-4 bg-gray-200 rounded-lg text-sm space-y-2">
+                        <p><span class="font-bold">Usuario:</span> {{ request.user.username }}</p>
+                        <p><span class="font-bold">Email:</span> {{ request.user.email|default:"No asignado" }}</p>
+                        <p><span class="font-bold">Rol:</span> {{ request.user.get_rol_display|default:request.user.rol }}</p>
+                        <p><span class="font-bold">Último Acceso:</span> {{ request.user.last_login|date:"d/m/Y H:i"|default:"Ahora" }}</p>
                     </div>
                 </div>
 
                 <!-- Formulario Datos de Contacto y Botones -->
-                <div class="flex-1 flex flex-col w-full max-w-xl">
+                <form action="{% url 'datos_usuario' %}" method="POST" class="flex-1 flex flex-col w-full max-w-xl">
+                    {% csrf_token %}
                     <div class="bg-[#d9d9d9] text-gray-900 rounded-xl p-6 md:p-8 shadow-lg">
                         <h2 class="text-xl md:text-2xl font-semibold mb-6">DATOS DE CONTACTO</h2>
                         <div class="space-y-4 md:space-y-6 text-base md:text-lg">
                             <div class="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
                                 <span class="font-medium min-w-[200px]">Cédula (Solo lectura):</span>
-                                <input type="text" value="V-12345678" readonly class="bg-transparent border-none outline-none font-normal w-full" tabindex="-1">
+                                <input type="text" value="{{ request.user.cedula|default:'Sin registrar' }}" readonly class="bg-transparent border-none outline-none font-bold text-gray-700 w-full" tabindex="-1">
                             </div>
                             <div class="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
                                 <span class="font-medium min-w-[200px]">Nombre completo (Solo lectura):</span>
-                                <input type="text" value="Pedro Juan Picapiedra Tercero" readonly class="bg-transparent border-none outline-none font-normal w-full" tabindex="-1">
+                                <input type="text" value="{{ request.user.get_full_name|default:request.user.username }}" readonly class="bg-transparent border-none outline-none font-bold text-gray-700 w-full" tabindex="-1">
                             </div>
                             <div class="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 border-b border-gray-400 pb-2 focus-within:border-orange-500 transition-colors">
                                 <label for="telefono" class="font-medium min-w-[200px]">Nro de Teléfono:</label>
-                                <input type="tel" id="telefono" value="04XX-1234567" class="bg-transparent border-none outline-none font-normal w-full focus:ring-0">
+                                <input type="tel" id="telefono" name="telefono" value="{{ request.user.telefono|default:'' }}" placeholder="Ej: 0412-1234567" class="bg-transparent border-none outline-none font-medium w-full focus:ring-0">
                             </div>
                             <div class="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 border-b border-gray-400 pb-2 focus-within:border-orange-500 transition-colors">
-                                <label for="localidad" class="font-medium min-w-[200px]">Localidad:</label>
-                                <input type="text" id="localidad" value="Quiente preguntó" class="bg-transparent border-none outline-none font-normal w-full focus:ring-0">
+                                <span class="font-medium min-w-[200px]">Correo Electrónico:</span>
+                                <input type="email" value="{{ request.user.email|default:'sin_correo@ejemplo.com' }}" readonly class="bg-transparent border-none outline-none font-medium text-gray-600 w-full" tabindex="-1">
                             </div>
                         </div>
                     </div>
 
                     <div class="flex justify-center gap-8 md:gap-16 mt-8">
-                        <button class="bg-[#d47c35] text-gray-900 font-semibold px-8 py-3 rounded-md w-40 min-h-[44px] hover:bg-[#b86729] focus:ring-2 focus:ring-white transition-colors shadow-md">Cancelar</button>
-                        <button class="bg-[#d47c35] text-gray-900 font-semibold px-8 py-3 rounded-md w-40 min-h-[44px] hover:bg-[#b86729] focus:ring-2 focus:ring-white transition-colors shadow-md">Guardar</button>
+                        <a href="javascript:history.back()" class="bg-gray-500 text-white font-semibold px-8 py-3 rounded-md w-40 min-h-[44px] hover:bg-gray-600 text-center flex items-center justify-center transition-colors shadow-md">Volver</a>
+                        <button type="submit" class="bg-[#d47c35] text-gray-900 font-semibold px-8 py-3 rounded-md w-40 min-h-[44px] hover:bg-[#b86729] focus:ring-2 focus:ring-white transition-colors shadow-md">Guardar</button>
                     </div>
-                </div>
+                </form>
 
             </div>
         </div>

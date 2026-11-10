@@ -58,13 +58,13 @@
 
                 <div id="contenedorListas" class="hidden mt-2 w-full z-50 bg-[#404348] border border-gray-600 rounded-md shadow-2xl p-3 flex-col gap-3 animate-fade-in">
                     <div id="menu-admin" class="menu-group flex flex-col gap-2">
-                        <a href="#" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Dashboard</a>
-                        <a href="#" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Gestor de técnicos</a>
-                        <a href="#" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Nuevo Reporte</a>
-                        <a href="#" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 border-2 border-orange-500 shadow-sm" aria-current="page">Inventario (Activo)</a>
-                        <a href="#" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Histórico</a>
-                        <a href="#" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Mis datos</a>
-                        <a href="#" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Mis Equipos</a>
+                        <a href="{% url 'gerente_dashboard' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Dashboard</a>
+                        <a href="{% url 'gerente_gestion_tecnicos' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Gestor de técnicos</a>
+                        <a href="{% url 'crear_reporte' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Nuevo Reporte</a>
+                        <a href="{% url 'gerente_inventario' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 border-2 border-orange-500 shadow-sm" aria-current="page">Inventario (Activo)</a>
+                        <a href="{% url 'datos_usuario' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Mis datos</a>
+                        <a href="{% url 'mis_equipos' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Mis Equipos</a>
+                        <a href="{% url 'logout' %}" class="bg-red-800 text-white font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-red-700 transition-colors shadow-sm mt-2">Cerrar Sesión</a>
                     </div>
                 </div>
             </div>
@@ -82,7 +82,8 @@
             <div class="flex justify-end">
                 <div class="flex items-center gap-3 bg-[#404348] px-4 py-2 rounded-full shadow-md">
                     <div class="w-10 h-10 bg-gray-300 text-gray-800 rounded-full flex items-center justify-center font-bold">👤</div>
-                    <span class="text-lg font-medium">Admin</span>
+                    <span class="text-lg font-medium">{{ request.user.username }} (Gerente)</span>
+                    <a href="{% url 'logout' %}" class="text-xs text-red-400 hover:text-red-300 underline ml-2" title="Cerrar sesión">Salir</a>
                 </div>
             </div>
         </header>

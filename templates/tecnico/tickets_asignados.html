@@ -56,12 +56,12 @@
                     <!-- Lista TÉCNICO -->
                     <div id="menu-tecnico" class="menu-group flex flex-col gap-2">
                         <!-- Vista Activa -->
-                        <a href="#" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 border-2 border-orange-500 shadow-sm" aria-current="page">Tickets asignados (Activo)</a>
-                        
-                        <a href="#" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Nuevo Reporte</a>
-                        <a href="#" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Histórico</a>
-                        <a href="#" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Mis datos</a>
-                        <a href="#" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Mis Equipos</a>
+                        <a href="{% url 'tecnico_tickets_asignados' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 border-2 border-orange-500 shadow-sm" aria-current="page">Tickets asignados (Activo)</a>
+                        <a href="{% url 'crear_reporte' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Nuevo Reporte</a>
+                        <a href="{% url 'tecnico_historial' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Histórico</a>
+                        <a href="{% url 'datos_usuario' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Mis datos</a>
+                        <a href="{% url 'mis_equipos' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Mis Equipos</a>
+                        <a href="{% url 'logout' %}" class="bg-red-800 text-white font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-red-700 transition-colors shadow-sm mt-2">Cerrar Sesión</a>
                     </div>
 
                 </div>
@@ -81,7 +81,8 @@
             <div class="flex justify-end">
                 <div class="flex items-center gap-3 bg-[#404348] px-4 py-2 rounded-full shadow-md">
                     <div class="w-10 h-10 bg-gray-300 text-gray-800 rounded-full flex items-center justify-center font-bold">👤</div>
-                    <span class="text-lg font-medium">Técnico</span>
+                    <span class="text-lg font-medium">{{ request.user.username }} (Técnico)</span>
+                    <a href="{% url 'logout' %}" class="text-xs text-red-400 hover:text-red-300 underline ml-2" title="Cerrar sesión">Salir</a>
                 </div>
             </div>
         </header>
@@ -89,6 +90,16 @@
         <!-- CONTENEDOR CENTRAL: TICKETS ASIGNADOS -->
         <div class="flex-1 p-4 md:p-8 flex flex-col max-w-6xl mx-auto w-full gap-6">
             
+            {% if messages %}
+            <div class="space-y-2">
+                {% for message in messages %}
+                <div class="p-4 rounded-lg font-semibold text-sm {% if message.tags == 'error' %}bg-red-500/20 text-red-300 border border-red-500/50{% else %}bg-green-500/20 text-green-300 border border-green-500/50{% endif %}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
             <!-- Barra Superior: Título y Filtro -->
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 
@@ -123,72 +134,69 @@
                 <div>Estado</div>
             </div>
 
-            <!-- LISTA DE TICKETS Y PREPARACIÓN PARA BASE DE DATOS DJANGO -->
+            <!-- LISTA DE TICKETS ASIGNADOS AL TÉCNICO -->
             <div class="flex flex-col gap-6">
-                
-                <!-- 📌 COMENTARIO DJANGO: Aquí inicia la conexión real con la base de datos -->
-                <!-- {% if tickets_asignados %} -->
-                <!-- {% for ticket in tickets_asignados %} -->
-
-                <!-- Bloque de Plantilla (Card Layout / Mobile First) -->
-                <!-- En móvil se apila verticalmente, en PC respeta las 5 columnas -->
+                {% for ticket in tickets_asignados %}
                 <div class="bg-[#e6e6e6] rounded-xl shadow-lg overflow-hidden flex flex-col group transition-all duration-200">
-                    
-                    <!-- Fila de Datos -->
                     <div class="grid grid-cols-1 md:grid-cols-5 gap-4 p-5 md:p-6 text-gray-900 items-center font-medium md:text-center text-sm lg:text-base border-b border-gray-300 md:border-none">
-                        
-                        <!-- Código Reporte (Accesibilidad WCAG 2.1 AA - Color y Subrayado) -->
                         <div class="flex justify-between md:block items-center">
                             <span class="md:hidden font-bold text-gray-600">Código reporte:</span>
-                            <!-- Se usaría {{ ticket.codigo }} en Django -->
-                            <a href="#" class="text-blue-700 font-bold hover:text-blue-900 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-600 rounded px-2 py-1 transition-all inline-flex items-center min-h-[44px] md:min-h-0">
-                                Tk099
+                            <a href="{% url 'tecnico_solucion_caso_detalle' ticket.id %}" class="text-blue-700 font-bold hover:text-blue-900 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-600 rounded px-2 py-1 transition-all inline-flex items-center min-h-[44px] md:min-h-0">
+                                {{ ticket.folio }}
                             </a>
                         </div>
-                        
-                        <!-- Fecha Creación -->
                         <div class="flex justify-between md:block items-center">
                             <span class="md:hidden font-bold text-gray-600">Creado:</span>
-                            <span>XX/XX/XXXX</span>
+                            <span>{{ ticket.fecha_creacion|date:"d/m/Y H:i" }}</span>
                         </div>
-                        
-                        <!-- Asunto -->
                         <div class="flex justify-between md:block items-center">
                             <span class="md:hidden font-bold text-gray-600">Asunto:</span>
-                            <span>Falla Cableado</span>
+                            <span class="truncate block max-w-xs mx-auto" title="{{ ticket.asunto }}">{{ ticket.asunto }}</span>
                         </div>
-                        
-                        <!-- Prioridad -->
                         <div class="flex justify-between md:block items-center">
                             <span class="md:hidden font-bold text-gray-600">Prioridad:</span>
-                            <span class="font-bold text-red-700 md:text-gray-900 md:font-medium">Alta</span>
+                            <span class="font-bold text-orange-700">{{ ticket.prioridad.nombre }}</span>
                         </div>
-                        
-                        <!-- Estado -->
                         <div class="flex justify-between md:block items-center">
                             <span class="md:hidden font-bold text-gray-600">Estado:</span>
-                            <span>En atención</span>
+                            <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-bold">{{ ticket.estado.nombre }}</span>
                         </div>
                     </div>
 
-                    <!-- Fila de Acción (Ergonomía y Ley de Fitts ISO 9241-11) -->
-                    <!-- El botón se alinea a la derecha en escritorio y ocupa el 100% en móvil debajo de los datos -->
                     <div class="bg-gray-200/50 px-5 md:px-6 py-4 flex justify-end md:border-t border-gray-300">
-                        <a href="#" class="bg-[#d47c35] text-gray-900 font-bold px-6 py-2 rounded-md min-h-[44px] w-full md:w-auto hover:bg-[#b86729] focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-[#e6e6e6] transition-colors shadow-md text-center flex items-center justify-center">
+                        <a href="{% url 'tecnico_solucion_caso_detalle' ticket.id %}" class="bg-[#d47c35] text-gray-900 font-bold px-6 py-2 rounded-md min-h-[44px] w-full md:w-auto hover:bg-[#b86729] focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-[#e6e6e6] transition-colors shadow-md text-center flex items-center justify-center">
                             Registrar diagnóstico
                         </a>
                     </div>
                 </div>
-
-                <!-- {% empty %} -->
-                <!-- 
+                {% empty %}
                 <div class="text-center text-gray-400 py-10 bg-[#404348] rounded-xl border border-gray-600 border-dashed">
                     <p class="text-lg">No tienes tickets asignados en este momento.</p>
-                </div> 
-                -->
-                <!-- {% endfor %} -->
-                <!-- {% endif %} -->
+                </div>
+                {% endfor %}
 
+                {% if tickets_disponibles %}
+                <div class="mt-8 pt-6 border-t border-gray-700">
+                    <h3 class="text-xl font-bold text-yellow-400 mb-4">Tickets disponibles sin asignar</h3>
+                    <div class="flex flex-col gap-4">
+                        {% for ticket in tickets_disponibles %}
+                        <div class="bg-[#e6e6e6] rounded-xl shadow-lg p-5 flex flex-col md:flex-row justify-between items-center gap-4 text-gray-900">
+                            <div>
+                                <span class="font-bold text-orange-600 text-lg">{{ ticket.folio }}</span> - 
+                                <span class="font-semibold">{{ ticket.asunto }}</span>
+                                <span class="text-xs text-gray-600 block mt-1">Reportado por: {{ ticket.usuario.get_full_name|default:ticket.usuario.username }} | Creado: {{ ticket.fecha_creacion|date:"d/m/Y H:i" }}</span>
+                            </div>
+                            <div class="flex items-center gap-4 w-full md:w-auto justify-end">
+                                <span class="bg-yellow-200 text-yellow-900 px-3 py-1 rounded-full text-xs font-bold">{{ ticket.estado.nombre }}</span>
+                                <a href="{% url 'tecnico_autoasignar' ticket.id %}" class="bg-emerald-600 text-white font-bold px-5 py-2 rounded-md hover:bg-emerald-700 transition-colors shadow text-sm">
+                                    Tomar ticket
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
             </div>
 
             <!-- PAGINACIÓN Y CONTROLES -->

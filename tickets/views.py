@@ -1,10 +1,11 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
-from users.permissions import cliente_required, tecnico_required
+from users.permissions import cliente_required, tecnico_required, obtener_ruta_por_rol
 from catalogos.models import Categoria, EstadoTicket, Prioridad
 from .models import (
     Ticket, 
@@ -74,10 +75,10 @@ def cliente_historico_view(request):
     return render(request, 'cliente/historico.html', context)
 
 
-@cliente_required
+@login_required
 def crear_ticket_view(request):
     """
-    Controlador para el registro de una nueva incidencia (Rol Cliente).
+    Controlador para el registro de una nueva incidencia (Rol Cliente y Usuarios Autenticados).
     - Validación Multimedia Estricta: JPG, PNG, JPEG máx 5MB.
     - Generación de Código Único: Asigna automáticamente estado inicial,
       prioridad por defecto, usuario y genera el folio secuencial en save().
@@ -285,7 +286,7 @@ def solucionar_ticket_view(request, ticket_id=None):
 
     if request.method == 'POST' and ticket:
         nuevo_estado_id = request.POST.get('nuevo_estado')
-        diagnostico = request.POST.get('diagnostico', '').strip()
+        diagnostico = (request.POST.get('diagnostico') or request.POST.get('solucion') or '').strip()
         tiempo_minutos = request.POST.get('tiempo_minutos', '0').strip()
         tiempo_val = int(tiempo_minutos) if tiempo_minutos.isdigit() else 0
 

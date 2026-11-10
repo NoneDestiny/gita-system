@@ -2,6 +2,7 @@ import json
 import secrets
 from django.shortcuts import render, redirect
 from django.http import JsonResponse, HttpResponseForbidden
+from django.contrib import messages
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.views import LoginView
 from django.contrib.auth.decorators import login_required
@@ -269,27 +270,35 @@ def gerente_gestion_tecnicos_view(request):
 @login_required
 def mis_equipos_view(request):
     """Vista de equipos asociados."""
+    from tickets.models import Equipo
+    equipos = Equipo.objects.all()
     return render(request, 'general/equipos.html', {
         'modulo': 'equipos',
-        'usuario': request.user
+        'usuario': request.user,
+        'equipos': equipos,
     })
 
 
 @login_required
 def crear_reporte_view(request):
-    """Creación de nuevos reportes de incidencia."""
-    return render(request, 'general/crear_reporte.html', {
-        'modulo': 'crear_reporte',
-        'usuario': request.user
-    })
+    """Creación de nuevos reportes de incidencia (Redirige al controlador MVT de tickets)."""
+    return redirect('crear_reporte')
 
 
 @login_required
 def datos_usuario_view(request):
     """Perfil y datos del usuario autenticado."""
+    if request.method == 'POST':
+        telefono = request.POST.get('telefono', '').strip()
+        if hasattr(request.user, 'telefono') and telefono:
+            request.user.telefono = telefono
+            request.user.save(update_fields=['telefono'])
+            messages.success(request, "Tus datos han sido actualizados con éxito.")
+        return redirect('datos_usuario')
+
     return render(request, 'general/datos_usuario.html', {
         'modulo': 'perfil',
-        'usuario': request.user
+        'usuario': request.user,
     })
 
 

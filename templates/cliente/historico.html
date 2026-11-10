@@ -54,15 +54,29 @@
 
                 <div id="contenedorListas" class="hidden absolute top-full mt-2 left-0 w-full z-50 bg-[#404348] border border-gray-600 rounded-md shadow-2xl p-3 flex-col gap-3">
                     
-                    <!-- Lista CLIENTE (Histórico Activo) -->
                     <div id="menu-cliente" class="menu-group flex flex-col gap-2">
-                        <a href="#" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Nuevo reporte</a>
-                        <a href="#" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Mis datos</a>
-                        <a href="#" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 border-2 border-orange-500 shadow-sm" aria-current="page">Histórico</a>
-                        <a href="#" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Mis Equipos</a>
+                        {% if request.user.rol == 'TECNICO' %}
+                        <a href="{% url 'tecnico_tickets_asignados' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Tickets asignados</a>
+                        <a href="{% url 'crear_reporte' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Nuevo Reporte</a>
+                        <a href="{% url 'tecnico_historial' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 border-2 border-orange-500 shadow-sm" aria-current="page">Histórico</a>
+                        <a href="{% url 'datos_usuario' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Mis datos</a>
+                        <a href="{% url 'mis_equipos' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Mis Equipos</a>
+                        {% elif request.user.rol == 'GERENTE' %}
+                        <a href="{% url 'gerente_dashboard' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Dashboard</a>
+                        <a href="{% url 'gerente_gestion_tecnicos' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Gestión técnicos</a>
+                        <a href="{% url 'gerente_inventario' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Inventario</a>
+                        <a href="{% url 'crear_reporte' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Nuevo Reporte</a>
+                        <a href="{% url 'cliente_historico' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 border-2 border-orange-500 shadow-sm" aria-current="page">Histórico</a>
+                        <a href="{% url 'datos_usuario' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Mis datos</a>
+                        <a href="{% url 'mis_equipos' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Mis Equipos</a>
+                        {% else %}
+                        <a href="{% url 'crear_reporte' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Nuevo reporte</a>
+                        <a href="{% url 'datos_usuario' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Mis datos</a>
+                        <a href="{% url 'cliente_historico' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 border-2 border-orange-500 shadow-sm" aria-current="page">Histórico</a>
+                        <a href="{% url 'mis_equipos' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Mis Equipos</a>
+                        {% endif %}
+                        <a href="{% url 'logout' %}" class="bg-red-800 text-white font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-red-700 transition-colors shadow-sm mt-2">Cerrar Sesión</a>
                     </div>
-                    
-                    <!-- (Omito los menús técnico y gerente por brevedad, asume que están igual que en el paso anterior) -->
                 </div>
             </div>
         </nav>
@@ -82,7 +96,8 @@
             <div class="flex justify-end">
                 <div class="flex items-center gap-3 bg-[#404348] px-4 py-2 rounded-full shadow-md">
                     <div class="w-10 h-10 bg-gray-300 text-gray-800 rounded-full flex items-center justify-center font-bold">👤</div>
-                    <span class="text-lg font-medium">Usuario</span>
+                    <span class="text-lg font-medium">{{ request.user.username }}</span>
+                    <a href="{% url 'logout' %}" class="text-xs text-red-400 hover:text-red-300 underline ml-2" title="Cerrar sesión">Salir</a>
                 </div>
             </div>
         </header>
@@ -132,93 +147,59 @@
                         </tr>
                     </thead>
                     <tbody class="text-gray-900 font-medium text-sm lg:text-base">
-                        <!-- Fila 1 -->
+                        {% for ticket in tickets %}
                         <tr>
-                            <!-- Primer celda lleva rounded-t-xl para simular la columna -->
-                            <td class="bg-[#e6e6e6] pt-4 pb-2 rounded-t-xl">
-                                <!-- WCAG 2.1 AA: Enlace con contraste, subrayado al hover -->
-                                <a href="#" class="text-blue-700 hover:text-blue-900 hover:underline focus:ring-2 focus:ring-blue-600 focus:outline-none rounded px-1 transition-all">Tk001</a>
+                            <td class="bg-[#e6e6e6] py-3 px-2 {% if forloop.first %}rounded-t-xl{% endif %} {% if forloop.last %}rounded-b-xl{% endif %}">
+                                <span class="font-bold text-orange-600">{{ ticket.folio }}</span>
                             </td>
-                            <td class="bg-[#e6e6e6] pt-4 pb-2 rounded-t-xl">15/10/2026</td>
-                            <td class="bg-[#e6e6e6] pt-4 pb-2 rounded-t-xl">Falla Cableado</td>
-                            <td class="bg-[#e6e6e6] pt-4 pb-2 rounded-t-xl">🟢 Resuelto</td>
-                            <td class="bg-[#e6e6e6] pt-4 pb-2 rounded-t-xl">Ninguna</td>
+                            <td class="bg-[#e6e6e6] py-3 px-2 {% if forloop.first %}rounded-t-xl{% endif %} {% if forloop.last %}rounded-b-xl{% endif %}">
+                                {{ ticket.fecha_creacion|date:"d/m/Y" }}
+                            </td>
+                            <td class="bg-[#e6e6e6] py-3 px-2 {% if forloop.first %}rounded-t-xl{% endif %} {% if forloop.last %}rounded-b-xl{% endif %}">
+                                {{ ticket.asunto }}
+                            </td>
+                            <td class="bg-[#e6e6e6] py-3 px-2 {% if forloop.first %}rounded-t-xl{% endif %} {% if forloop.last %}rounded-b-xl{% endif %}">
+                                <span class="inline-block px-2.5 py-1 text-xs rounded-full bg-gray-700 text-white font-semibold">
+                                    {{ ticket.estado.nombre }}
+                                </span>
+                            </td>
+                            <td class="bg-[#e6e6e6] py-3 px-2 {% if forloop.first %}rounded-t-xl{% endif %} {% if forloop.last %}rounded-b-xl{% endif %} font-semibold">
+                                {{ ticket.prioridad.nombre }}
+                            </td>
                         </tr>
-                        <!-- Fila 2 -->
+                        {% empty %}
                         <tr>
-                            <td class="bg-[#e6e6e6] py-2">
-                                <a href="#" class="text-blue-700 hover:text-blue-900 hover:underline focus:ring-2 focus:ring-blue-600 focus:outline-none rounded px-1 transition-all">Tk002</a>
+                            <td colspan="5" class="bg-[#e6e6e6] py-8 text-center text-gray-600 italic rounded-xl">
+                                No tienes tickets registrados aún. 
+                                <a href="{% url 'crear_reporte' %}" class="text-orange-600 font-bold hover:underline ml-1">¡Crea tu primer reporte aquí!</a>
                             </td>
-                            <td class="bg-[#e6e6e6] py-2">16/10/2026</td>
-                            <td class="bg-[#e6e6e6] py-2">Capa 8</td>
-                            <td class="bg-[#e6e6e6] py-2">🟠 En Revisión</td>
-                            <td class="bg-[#e6e6e6] py-2">Baja</td>
                         </tr>
-                        <!-- Fila 3 -->
-                        <tr>
-                            <td class="bg-[#e6e6e6] py-2">
-                                <a href="#" class="text-blue-700 hover:text-blue-900 hover:underline focus:ring-2 focus:ring-blue-600 focus:outline-none rounded px-1 transition-all">Tk003</a>
-                            </td>
-                            <td class="bg-[#e6e6e6] py-2">18/10/2026</td>
-                            <td class="bg-[#e6e6e6] py-2">Falla Teclado</td>
-                            <td class="bg-[#e6e6e6] py-2">🔵 Abierto</td>
-                            <td class="bg-[#e6e6e6] py-2">Media</td>
-                        </tr>
-                        <!-- Fila 4 -->
-                        <tr>
-                            <td class="bg-[#e6e6e6] py-2">
-                                <a href="#" class="text-blue-700 hover:text-blue-900 hover:underline focus:ring-2 focus:ring-blue-600 focus:outline-none rounded px-1 transition-all">Tk004</a>
-                            </td>
-                            <td class="bg-[#e6e6e6] py-2">20/10/2026</td>
-                            <td class="bg-[#e6e6e6] py-2">Falla Monitor</td>
-                            <td class="bg-[#e6e6e6] py-2 text-gray-600">⚫ Cerrado</td>
-                            <td class="bg-[#e6e6e6] py-2">Ninguna</td>
-                        </tr>
-                        <!-- Fila 5 (Última) -->
-                        <tr>
-                            <td class="bg-[#e6e6e6] pb-4 pt-2 rounded-b-xl">
-                                <a href="#" class="text-blue-700 hover:text-blue-900 hover:underline focus:ring-2 focus:ring-blue-600 focus:outline-none rounded px-1 transition-all">Tk005</a>
-                            </td>
-                            <td class="bg-[#e6e6e6] pb-4 pt-2 rounded-b-xl">21/10/2026</td>
-                            <td class="bg-[#e6e6e6] pb-4 pt-2 rounded-b-xl">Falla Equipo</td>
-                            <td class="bg-[#e6e6e6] pb-4 pt-2 rounded-b-xl">🔵 Abierto</td>
-                            <td class="bg-[#e6e6e6] pb-4 pt-2 rounded-b-xl text-red-600 font-bold">Alta</td>
-                        </tr>
+                        {% endfor %}
                     </tbody>
                 </table>
             </div>
 
-            <!-- VISTA MÓVIL: CARD LAYOUT (Se oculta la tabla y aparecen las tarjetas) -->
+            <!-- VISTA MÓVIL: CARD LAYOUT -->
             <div class="md:hidden flex flex-col gap-4 mt-4">
-                
-                <!-- Tarjeta Ticket 1 -->
+                {% for ticket in tickets %}
                 <div class="bg-[#e6e6e6] text-gray-900 rounded-xl p-5 shadow-md">
                     <div class="flex justify-between items-center border-b border-gray-400 pb-2 mb-3">
                         <span class="font-bold text-sm text-gray-600">CÓDIGO:</span>
-                        <a href="#" class="text-blue-700 font-bold hover:underline focus:ring-2 focus:ring-blue-600 min-h-[44px] flex items-center">Tk001</a>
+                        <span class="text-orange-600 font-bold">{{ ticket.folio }}</span>
                     </div>
                     <div class="space-y-2 text-sm">
-                        <div class="flex justify-between"><span class="font-semibold text-gray-600">Fecha:</span> <span>15/10/2026</span></div>
-                        <div class="flex justify-between"><span class="font-semibold text-gray-600">Asunto:</span> <span>Falla Cableado</span></div>
-                        <div class="flex justify-between"><span class="font-semibold text-gray-600">Estado:</span> <span>🟢 Resuelto</span></div>
-                        <div class="flex justify-between"><span class="font-semibold text-gray-600">Prioridad:</span> <span>Ninguna</span></div>
+                        <div class="flex justify-between"><span class="font-semibold text-gray-600">Fecha:</span> <span>{{ ticket.fecha_creacion|date:"d/m/Y" }}</span></div>
+                        <div class="flex justify-between"><span class="font-semibold text-gray-600">Asunto:</span> <span>{{ ticket.asunto }}</span></div>
+                        <div class="flex justify-between"><span class="font-semibold text-gray-600">Estado:</span> <span>{{ ticket.estado.nombre }}</span></div>
+                        <div class="flex justify-between"><span class="font-semibold text-gray-600">Prioridad:</span> <span>{{ ticket.prioridad.nombre }}</span></div>
                     </div>
                 </div>
-
-                <!-- Tarjeta Ticket 2 -->
-                <div class="bg-[#e6e6e6] text-gray-900 rounded-xl p-5 shadow-md">
-                    <div class="flex justify-between items-center border-b border-gray-400 pb-2 mb-3">
-                        <span class="font-bold text-sm text-gray-600">CÓDIGO:</span>
-                        <a href="#" class="text-blue-700 font-bold hover:underline focus:ring-2 focus:ring-blue-600 min-h-[44px] flex items-center">Tk002</a>
-                    </div>
-                    <div class="space-y-2 text-sm">
-                        <div class="flex justify-between"><span class="font-semibold text-gray-600">Fecha:</span> <span>16/10/2026</span></div>
-                        <div class="flex justify-between"><span class="font-semibold text-gray-600">Asunto:</span> <span>Capa 8</span></div>
-                        <div class="flex justify-between"><span class="font-semibold text-gray-600">Estado:</span> <span>🟠 En Revisión</span></div>
-                        <div class="flex justify-between"><span class="font-semibold text-gray-600">Prioridad:</span> <span>Baja</span></div>
-                    </div>
+                {% empty %}
+                <div class="bg-[#e6e6e6] text-gray-900 rounded-xl p-5 text-center italic">
+                    No tienes tickets registrados aún. 
+                    <a href="{% url 'crear_reporte' %}" class="text-orange-600 font-bold hover:underline block mt-2">Crear mi primer reporte</a>
                 </div>
-
+                {% endfor %}
             </div>
 
             <!-- PAGINACIÓN Y CONTROLES (Ergonomía Táctil 44x44px) -->
