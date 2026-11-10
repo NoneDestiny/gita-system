@@ -9,10 +9,6 @@ from users.views import (
     logout_view,
     api_login_view,
     error_403_view,
-    # Flujo Técnico
-    tecnico_tickets_asignados_view,
-    tecnico_solucion_caso_view,
-    tecnico_historial_view,
     # Flujo Gerencia
     gerente_dashboard_view,
     gerente_inventario_view,
@@ -24,6 +20,12 @@ from users.views import (
 from tickets.views import (
     cliente_historico_view,
     crear_ticket_view,
+    # Flujo Técnico
+    tecnico_tickets_asignados_view,
+    autoasignar_ticket_view,
+    solucionar_ticket_view,
+    escalar_ticket_view,
+    tecnico_historial_view,
 )
 
 urlpatterns = [
@@ -41,7 +43,10 @@ urlpatterns = [
 
     # Rutas protegidas por RBAC - TÉCNICO
     path('tecnico/tickets-asignados/', tecnico_tickets_asignados_view, name='tecnico_tickets_asignados'),
-    path('tecnico/solucion-caso/', tecnico_solucion_caso_view, name='tecnico_solucion_caso'),
+    path('tecnico/ticket/<int:ticket_id>/autoasignar/', autoasignar_ticket_view, name='tecnico_autoasignar'),
+    path('tecnico/solucion-caso/', solucionar_ticket_view, name='tecnico_solucion_caso'),
+    path('tecnico/solucion-caso/<int:ticket_id>/', solucionar_ticket_view, name='tecnico_solucion_caso_detalle'),
+    path('tecnico/ticket/<int:ticket_id>/escalar/', escalar_ticket_view, name='tecnico_escalar'),
     path('tecnico/historial/', tecnico_historial_view, name='tecnico_historial'),
 
     # Rutas protegidas por RBAC - GERENTE

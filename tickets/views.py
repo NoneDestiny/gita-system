@@ -1,12 +1,28 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db.models import Q
 from django.core.exceptions import ValidationError
-from users.permissions import cliente_required
+from django.utils import timezone
+
+from users.permissions import cliente_required, tecnico_required
 from catalogos.models import Categoria, EstadoTicket, Prioridad
-from .models import Ticket, Equipo, Evidencia, validar_evidencia
+from .models import (
+    Ticket, 
+    Equipo, 
+    Evidencia, 
+    CambioEstado, 
+    Escalamiento, 
+    Intervencion, 
+    Asignacion, 
+    Auditoria,
+    validar_evidencia
+)
 from .emails import notificar_ticket_segundo_plano
 
+
+# ==============================================================================
+# FLUJO DEL CLIENTE
+# ==============================================================================
 
 @cliente_required
 def cliente_historico_view(request):
@@ -74,20 +90,17 @@ def crear_ticket_view(request):
 
         errores = []
 
-        # Validaciones de campos obligatorios
         if not asunto:
             errores.append("El campo 'Asunto' es obligatorio.")
         if not descripcion:
             errores.append("El campo 'Descripción' es obligatorio.")
 
-        # Obtener equipo
         equipo = None
         if serial_val:
             equipo = Equipo.objects.filter(
                 Q(serial__iexact=serial_val) | Q(id__iexact=serial_val)
             ).first()
         if not equipo:
-            # Fallback al primer equipo disponible o registro
             equipo = Equipo.objects.first()
             if not equipo:
                 equipo = Equipo.objects.create(
@@ -96,7 +109,6 @@ def crear_ticket_view(request):
                     modelo='Equipo TI'
                 )
 
-        # Obtener categoría
         categoria = None
         if cat_val:
             categoria = Categoria.objects.filter(
@@ -172,3 +184,237 @@ def crear_ticket_view(request):
         'modulo': 'crear_reporte',
     }
     return render(request, 'general/crear_reporte.html', context)
+
+
+# ==============================================================================
+# FLUJO DEL PERSONAL TÉCNICO (RBAC, DIAGNÓSTICOS, TRAZABILIDAD Y ESCALAMIENTO)
+# ==============================================================================
+
+@tecnico_required
+def tecnico_tickets_asignados_view(request):
+    """
+    Bandeja de trabajo del personal técnico:
+    Muestra los tickets asignados al técnico en sesión y tickets disponibles sin asignar.
+    """
+    tickets_propios = Ticket.objects.filter(
+        tecnico_asignado=request.user
+    ).select_related('categoria', 'prioridad', 'estado', 'equipo', 'usuario')
+
+    tickets_disponibles = Ticket.objects.filter(
+        tecnico_asignado__isnull=True
+    ).select_related('categoria', 'prioridad', 'estado', 'equipo', 'usuario')
+
+    context = {
+        'tickets_asignados': tickets_propios,
+        'tickets_disponibles': tickets_disponibles,
+        'usuario': request.user,
+        'modulo': 'tickets_asignados',
+    }
+    return render(request, 'tecnico/tickets_asignados.html', context)
+
+
+@tecnico_required
+def autoasignar_ticket_view(request, ticket_id):
+    """
+    Permite al técnico autoasignarse un ticket:
+    - Marca fecha_asignacion automáticamente (Cálculo de Tiempos).
+    - Cambia estado a 'En Revisión' / 'EN_PROCESO'.
+    - Registra en Asignacion, CambioEstado y Auditoria.
+    """
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+
+    # 1. Asignar técnico y marcar fecha_asignacion automática
+    ticket.tecnico_asignado = request.user
+    if not ticket.fecha_asignacion:
+        ticket.fecha_asignacion = timezone.now()
+
+    # 2. Registrar en Asignación
+    Asignacion.objects.create(
+        ticket=ticket,
+        tecnico_asignado=request.user,
+        asignado_por=request.user
+    )
+
+    # 3. Transición de estado a 'En Revisión'
+    estado_en_revision = (
+        EstadoTicket.objects.filter(nombre__in=['EN_PROCESO', 'En Revisión', 'En Proceso']).first() or
+        ticket.estado
+    )
+    if ticket.estado != estado_en_revision:
+        estado_ant = ticket.estado
+        ticket.estado = estado_en_revision
+        # Trazabilidad Inquebrantable
+        CambioEstado.objects.create(
+            ticket=ticket,
+            estado_anterior=estado_ant,
+            estado_nuevo=estado_en_revision,
+            modificado_por=request.user,
+            motivo="Autoasignación del ticket por el técnico."
+        )
+
+    # 4. Auditoría
+    Auditoria.objects.create(
+        ticket=ticket,
+        usuario=request.user,
+        accion=f"Autoasignación por el técnico {request.user.username}"
+    )
+
+    ticket.save()
+    messages.success(request, f"Te has autoasignado exitosamente el ticket {ticket.folio}.")
+    return redirect('tecnico_tickets_asignados')
+
+
+@tecnico_required
+def solucionar_ticket_view(request, ticket_id=None):
+    """
+    Gestión y resolución de incidencias por el técnico:
+    - Registro de diagnósticos e intervenciones técnicas con tiempo invertido.
+    - Cambio de estado con Trazabilidad Inquebrantable en CambioEstado.
+    - Marcado automático de fecha_cierre cuando el ticket pasa a Resuelto o Cerrado.
+    """
+    ticket = None
+    if ticket_id:
+        ticket = get_object_or_404(Ticket, id=ticket_id)
+    else:
+        # Si no se pasó id por URL, tomar el primer ticket asignado o query param
+        tid = request.GET.get('ticket_id') or request.POST.get('ticket_id')
+        if tid:
+            ticket = get_object_or_404(Ticket, id=tid)
+        else:
+            ticket = Ticket.objects.filter(tecnico_asignado=request.user).first()
+
+    if request.method == 'POST' and ticket:
+        nuevo_estado_id = request.POST.get('nuevo_estado')
+        diagnostico = request.POST.get('diagnostico', '').strip()
+        tiempo_minutos = request.POST.get('tiempo_minutos', '0').strip()
+        tiempo_val = int(tiempo_minutos) if tiempo_minutos.isdigit() else 0
+
+        # Obtener nuevo estado
+        nuevo_estado = None
+        if nuevo_estado_id:
+            nuevo_estado = EstadoTicket.objects.filter(
+                Q(id__iexact=nuevo_estado_id) | Q(nombre__iexact=nuevo_estado_id)
+            ).first()
+
+        if not nuevo_estado:
+            nuevo_estado = EstadoTicket.objects.filter(nombre__in=['RESUELTO', 'Resuelto']).first() or ticket.estado
+
+        # 1. Trazabilidad Inquebrantable: Registrar CambioEstado
+        estado_anterior = ticket.estado
+        if estado_anterior != nuevo_estado:
+            ticket.estado = nuevo_estado
+            CambioEstado.objects.create(
+                ticket=ticket,
+                estado_anterior=estado_anterior,
+                estado_nuevo=nuevo_estado,
+                modificado_por=request.user,
+                motivo=diagnostico[:255] if diagnostico else "Cambio de estado por resolución técnica."
+            )
+
+        # 2. Registrar Intervención y Diagnóstico
+        if diagnostico:
+            Intervencion.objects.create(
+                ticket=ticket,
+                tecnico=request.user,
+                descripcion=diagnostico,
+                tiempo_invertido_minutos=tiempo_val
+            )
+
+        # 3. Cálculo de Tiempos: Marcar automáticamente fecha_cierre al resolver/cerrar
+        nombres_cierre = ['RESUELTO', 'CERRADO', 'Resuelto', 'Cerrado']
+        if nuevo_estado.es_final or nuevo_estado.nombre in nombres_cierre:
+            if not ticket.fecha_cierre:
+                ticket.fecha_cierre = timezone.now()
+
+        # 4. Auditoría
+        Auditoria.objects.create(
+            ticket=ticket,
+            usuario=request.user,
+            accion=f"Actualización de estado a {nuevo_estado.nombre} con diagnóstico"
+        )
+
+        ticket.save()
+
+        # 5. Notificación por correo al cliente
+        tipo_notif = 'RESOLUCION' if nuevo_estado.nombre.upper() in ['RESUELTO', 'CERRADO'] else 'ACTUALIZACION'
+        notificar_ticket_segundo_plano(ticket, tipo_notif, mensaje_extra=diagnostico)
+
+        messages.success(request, f"Diagnóstico registrado y ticket {ticket.folio} actualizado a {nuevo_estado.nombre}.")
+        return redirect('tecnico_tickets_asignados')
+
+    context = {
+        'ticket': ticket,
+        'estados': EstadoTicket.objects.all(),
+        'usuario': request.user,
+        'modulo': 'solucion_caso',
+    }
+    return render(request, 'tecnico/solucion_caso.html', context)
+
+
+@tecnico_required
+def escalar_ticket_view(request, ticket_id):
+    """
+    Escalamiento de tickets:
+    - Registra en la tabla Escalamiento (Métricas obligatorias para SIG-543).
+    - Registra obligatoriamente en Intervencion.
+    - Notifica al equipo y cliente en segundo plano.
+    """
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+
+    if request.method == 'POST':
+        destino = request.POST.get('grupo_o_tecnico_destino', '').strip()
+        motivo = request.POST.get('motivo', '').strip()
+        tiempo_minutos = request.POST.get('tiempo_minutos', '0').strip()
+        tiempo_val = int(tiempo_minutos) if tiempo_minutos.isdigit() else 0
+
+        if not destino or not motivo:
+            messages.error(request, "Debe indicar el grupo/técnico destino y el motivo del escalamiento.")
+            return redirect('tecnico_solucion_caso_detalle', ticket_id=ticket.id)
+
+        # 1. Métricas de Escalamiento obligatorias (SIG-543)
+        Escalamiento.objects.create(
+            ticket=ticket,
+            tecnico_origen=request.user,
+            grupo_o_tecnico_destino=destino,
+            motivo=motivo
+        )
+
+        # 2. Registrar Intervención obligatoria vinculada
+        Intervencion.objects.create(
+            ticket=ticket,
+            tecnico=request.user,
+            descripcion=f"Escalamiento a {destino}. Motivo: {motivo}",
+            tiempo_invertido_minutos=tiempo_val
+        )
+
+        # 3. Auditoría
+        Auditoria.objects.create(
+            ticket=ticket,
+            usuario=request.user,
+            accion=f"Ticket escalado a {destino} por {request.user.username}"
+        )
+
+        # 4. Notificar vía Correo en Segundo Plano
+        notificar_ticket_segundo_plano(ticket, 'ESCALAMIENTO', mensaje_extra=f"Escalado a {destino}: {motivo}")
+
+        messages.success(request, f"Ticket {ticket.folio} escalado exitosamente a {destino}.")
+        return redirect('tecnico_tickets_asignados')
+
+    return redirect('tecnico_tickets_asignados')
+
+
+@tecnico_required
+def tecnico_historial_view(request):
+    """
+    Historial de casos intervenidos o resueltos por el técnico.
+    """
+    tickets_atendidos = Ticket.objects.filter(
+        Q(tecnico_asignado=request.user) | Q(intervenciones__tecnico=request.user)
+    ).distinct().select_related('categoria', 'prioridad', 'estado', 'usuario')
+
+    context = {
+        'tickets': tickets_atendidos,
+        'usuario': request.user,
+        'modulo': 'historial_tecnico',
+    }
+    return render(request, 'tecnico/historial_tecnico.html', context)
