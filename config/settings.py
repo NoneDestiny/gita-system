@@ -68,27 +68,18 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-# Database
-# Database Configuration (Supabase / Render)
-if os.getenv('DB_ENGINE', '').lower() == 'sqlite':
-    DATABASES = {
-        'default': dj_database_url.config(
-            # Si no hay variable en la nube, usa sqlite3 para tu entorno local por defecto
-            default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
-            conn_max_age=0 # OBLIGATORIO para Supabase Transaction Pooler (evita que se caiga)
-        )
-    }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.getenv('DB_NAME', 'gita_db'),
-            'USER': os.getenv('DB_USER', 'postgres'),
-            'PASSWORD': os.getenv('DB_PASSWORD', ''),
-            'HOST': os.getenv('DB_HOST', 'localhost'),
-            'PORT': os.getenv('DB_PORT', '5432'),
-        }
-    }
+# Database Configuration (Local y Producción)
+DATABASES = {
+    'default': dj_database_url.config(
+        # 1. Si existe DATABASE_URL (en Render), la usa (Supabase).
+        # 2. Si NO existe (en tu PC local), usa sqlite3 por defecto.
+        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+        conn_max_age=0 
+    )
+}
+
+# 2. Esta línea es OBLIGATORIA para Supabase Transaction Pooler
+DATABASES['default']['DISABLE_SERVER_SIDE_CURSORS'] = True
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [

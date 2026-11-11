@@ -17,6 +17,8 @@ logger = logging.getLogger(__name__)
 client = None
 if hasattr(settings, 'GEMINI_API_KEY') and settings.GEMINI_API_KEY:
     client = genai.Client(api_key=settings.GEMINI_API_KEY)
+    api_key=settings.GEMINI_API_KEY,
+    http_options=types.HttpOptions(timeout=60_000) 
 
 from users.permissions import cliente_required, tecnico_required, obtener_ruta_por_rol
 from catalogos.models import Categoria, EstadoTicket, Prioridad
@@ -620,11 +622,11 @@ def api_triaje_gemini_view(request):
 
         # Nueva sintaxis del SDK de Google
         response = client.models.generate_content(
-            model='gemini-1.5-flash',
+            model='gemini-3.5-flash-lite',
             contents=prompt,
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
-                timeout=15.0 # 15 segundos max
+                thinking_config=types.ThinkingConfig(thinking_level="low")
             )
         )
         
