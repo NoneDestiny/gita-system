@@ -227,13 +227,18 @@ def crear_ticket_view(request):
             )
             ticket.save()
 
-            # 4. Guardar Evidencias válidas
+                       # 4. Guardar Evidencias válidas
             for archivo in archivos:
-                Evidencia.objects.create(
-                    ticket=ticket,
-                    archivo=archivo,
-                    subido_por=request.user
-                )
+                try:
+                    Evidencia.objects.create(
+                        ticket=ticket,
+                        archivo=archivo,
+                        subido_por=request.user
+                    )
+                except Exception as e:
+                    # Si falla la imagen, el ticket ya se guardó. Solo mostramos una advertencia.
+                    print(f"Error al subir a Cloudinary: {str(e)}")
+                    messages.warning(request, f"El ticket {ticket.folio} se creó, pero hubo un problema al subir la imagen '{archivo.name}'.")
 
             # 5. Enviar notificación por correo en segundo plano (Asíncrono)
             notificar_ticket_segundo_plano(ticket, 'CREACION')
