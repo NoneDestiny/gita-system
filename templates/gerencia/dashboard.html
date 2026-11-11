@@ -1,217 +1,131 @@
-<!DOCTYPE html>
-<html lang="es" class="antialiased">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GITA - Dashboard Gerencial</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; overflow-x: hidden; }
-        
-        *:focus-visible { outline: 2px solid #D97706; outline-offset: 2px; }
-        
-        #sidebar { transition: transform 0.3s ease-in-out; }
-        .rotar-180 { transform: rotate(180deg); }
-        .animate-fade-in { animation: fadeIn 0.2s ease-out forwards; }
-    </style>
-</head>
-<body class="bg-[#303338] text-gray-200 h-screen flex flex-col md:flex-row overflow-hidden relative">
+{% extends 'base.html' %}
 
-    <!-- CABECERA MÓVIL -->
-    <header class="md:hidden flex items-center justify-between bg-[#2a2d31] p-4 shadow-md z-40 relative">
-        <button id="menuToggleMobile" class="text-white p-2 min-h-[44px] min-w-[44px] focus-visible:ring-2 focus-visible:ring-orange-500 rounded" aria-expanded="false" aria-controls="sidebar" aria-label="Abrir menú de navegación">
-            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-        </button>
-        <h1 class="text-xl font-bold">GITA System</h1>
-        <div class="w-10 h-10 bg-gray-500 rounded-full flex items-center justify-center">👤</div>
-    </header>
+{% block title %}GITA - Dashboard Gerencial{% endblock %}
 
-    <!-- SIDEBAR / MENÚ LATERAL (Rol Admin/Gerente) -->
-    <aside id="sidebar" class="absolute md:relative z-50 w-64 md:w-72 h-full bg-[#303338] border-r border-gray-600 flex flex-col transform -translate-x-full md:translate-x-0">
-        <div class="md:hidden p-4 flex justify-end border-b border-gray-600">
-            <button id="closeSidebar" class="text-gray-400 hover:text-white p-2 min-h-[44px] min-w-[44px]" aria-label="Cerrar menú">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </button>
+{% block content %}
+<div class="flex-1 p-4 md:p-8 flex flex-col max-w-7xl mx-auto w-full gap-8">
+    
+    <!-- SECCIÓN: Dashboard Operativo e Indicadores (Alertas Críticas) -->
+    <section>
+        <h2 class="text-2xl md:text-3xl font-bold text-white tracking-wide mb-4">
+            Dashboard operativo e indicadores
+        </h2>
+        
+        <div class="flex flex-col gap-3 font-medium text-sm md:text-base">
+            {% if repuestos_criticos %}
+                <div class="flex items-center gap-2 text-yellow-500 bg-yellow-500/10 px-3 py-2 rounded-md w-fit border border-yellow-500/20" role="alert">
+                    <span aria-hidden="true" class="text-lg">⚠️</span>
+                    <span>Alerta de inventario general: {{ repuestos_criticos|length }} repuesto(s) bajo el mínimo</span>
+                </div>
+
+                {% for rep in repuestos_criticos %}
+                <div class="flex items-center gap-2 text-red-500 bg-red-500/10 px-3 py-2 rounded-md w-fit border border-red-500/20 shadow-sm" role="alert">
+                    <span aria-hidden="true" class="text-lg">🚨</span>
+                    <span class="font-bold">Stock Crítico: {{ rep.nombre }} (Disponibles: {{ rep.stock_actual }} / Mín: {{ rep.stock_minimo }})</span>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="flex items-center gap-2 text-emerald-400 bg-emerald-500/10 px-3 py-2 rounded-md w-fit border border-emerald-500/20" role="status">
+                    <span aria-hidden="true" class="text-lg">✅</span>
+                    <span>Inventario operativo: Todos los repuestos cuentan con stock óptimo.</span>
+                </div>
+            {% endif %}
         </div>
+    </section>
 
-        <!-- Se añadió overflow-y-auto por si la lista es muy larga en pantallas pequeñas -->
-        <nav class="flex-1 p-6 overflow-y-auto">
-            <div class="relative w-full" id="wrapperDesplegable">
-                <button id="btnMenuPrincipal" aria-expanded="false" aria-controls="contenedorListas" class="w-full flex items-center justify-between bg-[#d9d9d9] text-gray-900 font-bold px-4 py-3 rounded min-h-[44px] hover:bg-gray-300 transition-colors focus:ring-2 focus:ring-orange-500 shadow-md">
-                    <div class="flex items-center gap-2">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-                        Menú Principal
-                    </div>
-                    <svg id="iconoDesplegable" class="w-5 h-5 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                </button>
+    <hr class="border-gray-600">
 
-                <!-- El contenedor ya no es "absolute", funciona como acordeón empujando el contenido -->
-                <div id="contenedorListas" class="hidden mt-2 w-full z-50 bg-[#404348] border border-gray-600 rounded-md shadow-2xl p-3 flex-col gap-3 animate-fade-in">
-                    
-                    <!-- Lista completa basada en el esquema proporcionado -->
-                    <div id="menu-admin" class="menu-group flex flex-col gap-2">
-                        <a href="{% url 'gerente_dashboard' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 border-2 border-orange-500 shadow-sm" aria-current="page">Dashboard</a>
-                        <a href="{% url 'gerente_gestion_tecnicos' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Gestor de técnicos</a>
-                        <a href="{% url 'crear_reporte' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Nuevo Reporte</a>
-                        <a href="{% url 'gerente_inventario' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Inventario</a>
-                        <a href="{% url 'datos_usuario' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Mis datos</a>
-                        <a href="{% url 'mis_equipos' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Mis Equipos</a>
-                        <a href="{% url 'logout' %}" class="bg-red-800 text-white font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-red-700 transition-colors shadow-sm mt-2">Cerrar Sesión</a>
-                    </div>
+    <h3 class="text-xl md:text-2xl font-bold text-white tracking-wide mt-2">
+        Carga de trabajo por técnico
+    </h3>
 
-                </div>
-            </div>
-        </nav>
-    </aside>
-
-    <div id="sidebarOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden md:hidden"></div>
-
-    <!-- CONTENIDO PRINCIPAL -->
-    <main class="flex-1 flex flex-col h-full overflow-y-auto w-full relative pb-8">
+    <!-- GRID PRINCIPAL: 1 col en Móvil (375px), 2 cols en Tableta (768px), Tabla + KPIs en Escritorio (1280px+) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:flex gap-8 xl:gap-12 w-full">
         
-        <header class="hidden md:grid grid-cols-3 items-center p-6 bg-[#2a2d31]/40 border-b border-gray-700/50">
-            <div></div>
-            <h1 class="text-2xl font-bold text-white tracking-wider text-center">GITA - Gestor de Incidencias TI</h1>
-            <div class="flex justify-end">
-                <div class="flex items-center gap-3 bg-[#404348] px-4 py-2 rounded-full shadow-md">
-                    <div class="w-10 h-10 bg-gray-300 text-gray-800 rounded-full flex items-center justify-center font-bold">👤</div>
-                    <span class="text-lg font-medium">{{ request.user.username }} (Gerente)</span>
-                    <a href="{% url 'logout' %}" class="text-xs text-red-400 hover:text-red-300 underline ml-2" title="Cerrar sesión">Salir</a>
-                </div>
-            </div>
-        </header>
-
-        <div class="flex-1 p-4 md:p-8 flex flex-col max-w-7xl mx-auto w-full gap-8">
+        <!-- COLUMNA IZQUIERDA: Tabla Comparativa -->
+        <div class="xl:flex-1">
             
-            <!-- SECCIÓN: Dashboard Operativo e Indicadores (Alertas Críticas) -->
-            <div>
-                <h2 class="text-2xl md:text-3xl font-bold text-white tracking-wide mb-4">
-                    Dashboard operativo e indicadores
-                </h2>
-                
-                <div class="flex flex-col gap-3 font-medium text-sm md:text-base">
-                    <!-- Alerta Nivel Medio (Amarilla) -->
-                    <div class="flex items-center gap-2 text-yellow-500 bg-yellow-500/10 px-3 py-2 rounded-md w-fit border border-yellow-500/20" role="alert">
-                        <span aria-hidden="true" class="text-lg">⚠️</span>
-                        <span>Alerta de inventario general</span>
-                    </div>
-
-                    <!-- Alerta Nivel Crítico (Roja) -->
-                    <div class="flex items-center gap-2 text-red-500 bg-red-500/10 px-3 py-2 rounded-md w-fit border border-red-500/20 shadow-sm" role="alert">
-                        <span aria-hidden="true" class="text-lg">🚨</span>
-                        <span class="font-bold">Stock Crítico: Memoria Ram DDR4 (Disponibles: 1)</span>
-                    </div>
-                </div>
+            <div class="hidden xl:grid grid-cols-4 gap-4 px-6 text-gray-300 font-medium text-center border-b border-gray-600 pb-3 mb-2">
+                <div class="text-left">Técnico</div>
+                <div>Asignados</div>
+                <div>Resueltos</div>
+                <div>Atrasados</div>
             </div>
 
-            <!-- LÍNEA SEPARADORA ESTRUCTURAL -->
-            <hr class="border-gray-600">
-
-            <h3 class="text-xl md:text-2xl font-bold text-white tracking-wide mt-2">
-                Carga de trabajo por técnico
-            </h3>
-
-            <!-- GRID PRINCIPAL: Tabla de Carga + KPIs -->
-            <div class="flex flex-col lg:flex-row gap-8 lg:gap-12 w-full">
+            <div class="flex flex-col gap-4 xl:gap-0 bg-transparent xl:bg-[#e6e6e6] xl:rounded-xl xl:shadow-lg xl:overflow-hidden xl:py-2">
                 
-                <!-- COLUMNA IZQUIERDA: Tabla Comparativa -->
-                <div class="flex-1">
-                    
-                    <div class="hidden md:grid grid-cols-4 gap-4 px-6 text-gray-300 font-medium text-center border-b border-gray-600 pb-3 mb-2">
-                        <div class="text-left">Técnico</div>
-                        <div>Asignados</div>
-                        <div>Resueltos</div>
-                        <div>Atrasados</div>
-                    </div>
-
-                    <div class="flex flex-col gap-4 md:gap-0 bg-transparent md:bg-[#e6e6e6] md:rounded-xl md:shadow-lg md:overflow-hidden md:py-2">
-                        
-                        <!-- Fila 1 -->
-                        <div class="bg-[#e6e6e6] rounded-xl p-5 shadow-md md:bg-transparent md:rounded-none md:p-0 md:shadow-none transition-all duration-200 hover:bg-gray-300/50">
-                            <div class="grid grid-cols-1 md:grid-cols-4 gap-3 md:gap-4 items-center text-gray-900 font-medium md:text-center text-base md:px-6 md:py-4">
-                                <div class="flex items-center justify-between md:justify-start border-b border-gray-300 pb-2 md:border-none md:pb-0">
-                                    <span class="md:hidden font-bold text-gray-600">Técnico:</span>
-                                    <span class="font-bold md:font-medium md:text-left truncate w-full text-right md:text-left">Nombre1 A.</span>
-                                </div>
-                                <div class="flex items-center justify-between md:justify-center"><span class="md:hidden font-bold text-gray-600">Asignados:</span><span>5</span></div>
-                                <div class="flex items-center justify-between md:justify-center"><span class="md:hidden font-bold text-gray-600">Resueltos:</span><span>10</span></div>
-                                <div class="flex items-center justify-between md:justify-center"><span class="md:hidden font-bold text-gray-600">Atrasados:</span><span class="text-red-700 font-bold md:text-gray-900 md:font-medium">2</span></div>
-                            </div>
+                {% for tec in carga_tecnicos %}
+                <div class="bg-[#e6e6e6] rounded-xl p-5 shadow-md xl:bg-transparent xl:rounded-none xl:p-0 xl:shadow-none transition-all duration-200 hover:bg-gray-300/50">
+                    <div class="grid grid-cols-1 xl:grid-cols-4 gap-3 xl:gap-4 items-center text-gray-900 font-medium xl:text-center text-base xl:px-6 xl:py-4 {% if not forloop.first %}xl:border-t xl:border-gray-300{% endif %}">
+                        <div class="flex items-center justify-between xl:justify-start border-b border-gray-300 pb-2 xl:border-none xl:pb-0">
+                            <span class="xl:hidden font-bold text-gray-600">Técnico:</span>
+                            <a href="{% url 'gerente_detalle_tecnico' tec.id %}" class="font-bold xl:font-semibold text-blue-800 hover:underline xl:text-left truncate text-right">
+                                {{ tec.nombre }}
+                            </a>
                         </div>
-
-                        <!-- Fila 2 -->
-                        <div class="bg-[#e6e6e6] rounded-xl p-5 shadow-md md:bg-transparent md:rounded-none md:p-0 md:shadow-none transition-all duration-200 hover:bg-gray-300/50">
-                            <div class="grid grid-cols-1 md:grid-cols-4 gap-3 md:gap-4 items-center text-gray-900 font-medium md:text-center text-base md:px-6 md:py-4 md:border-t md:border-gray-300">
-                                <div class="flex items-center justify-between md:justify-start border-b border-gray-300 pb-2 md:border-none md:pb-0">
-                                    <span class="md:hidden font-bold text-gray-600">Técnico:</span>
-                                    <span class="font-bold md:font-medium md:text-left truncate w-full text-right md:text-left">Nombre2 A.</span>
-                                </div>
-                                <div class="flex items-center justify-between md:justify-center"><span class="md:hidden font-bold text-gray-600">Asignados:</span><span>3</span></div>
-                                <div class="flex items-center justify-between md:justify-center"><span class="md:hidden font-bold text-gray-600">Resueltos:</span><span>25</span></div>
-                                <div class="flex items-center justify-between md:justify-center"><span class="md:hidden font-bold text-gray-600">Atrasados:</span><span>1</span></div>
-                            </div>
-                        </div>
-
+                        <div class="flex items-center justify-between xl:justify-center"><span class="xl:hidden font-bold text-gray-600">Asignados:</span><span>{{ tec.asignados }}</span></div>
+                        <div class="flex items-center justify-between xl:justify-center"><span class="xl:hidden font-bold text-gray-600">Resueltos:</span><span>{{ tec.resueltos }}</span></div>
+                        <div class="flex items-center justify-between xl:justify-center"><span class="xl:hidden font-bold text-gray-600">Atrasados:</span><span class="{% if tec.atrasados > 0 %}text-red-700 font-bold{% else %}text-gray-900{% endif %}">{{ tec.atrasados }}</span></div>
                     </div>
                 </div>
-
-                <!-- Divisor Semántico -->
-                <div class="hidden lg:block w-px bg-gray-500 self-stretch mt-4 mb-4"></div>
-
-                <!-- COLUMNA DERECHA: KPIs -->
-                <div class="w-full lg:w-72 flex flex-col gap-6 justify-center mt-6 lg:mt-0">
-                    <div class="bg-[#e6e6e6] text-gray-900 rounded-xl p-5 shadow-lg flex items-center justify-center text-center font-bold text-lg md:text-xl min-h-[70px] transform transition-transform hover:scale-105">
-                        Tickets abiertos: 24
-                    </div>
-                    <div class="bg-[#e6e6e6] text-gray-900 rounded-xl p-5 shadow-lg flex items-center justify-center text-center font-bold text-lg md:text-xl min-h-[70px] transform transition-transform hover:scale-105">
-                        %Cumplimiento: 92%
-                    </div>
-                    <div class="bg-[#e6e6e6] text-gray-900 rounded-xl p-5 shadow-lg flex items-center justify-center text-center font-bold text-lg md:text-xl min-h-[70px] transform transition-transform hover:scale-105">
-                        T. Promedio: 4.2hrs
-                    </div>
+                {% empty %}
+                <div class="p-6 text-center text-gray-700 bg-[#e6e6e6] rounded-xl italic">
+                    No hay técnicos registrados en el sistema.
                 </div>
+                {% endfor %}
 
             </div>
         </div>
-    </main>
 
-    <!-- Script de Interactividad -->
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('sidebarOverlay');
-            const toggleMobile = document.getElementById('menuToggleMobile');
-            
-            const btnMenuPrincipal = document.getElementById('btnMenuPrincipal');
-            const contenedorListas = document.getElementById('contenedorListas');
-            const iconoDesplegable = document.getElementById('iconoDesplegable');
+        <!-- Divisor Semántico (Escritorio) -->
+        <div class="hidden xl:block w-px bg-gray-500 self-stretch mt-4 mb-4"></div>
 
-            // Toggle del menú desplegable
-            btnMenuPrincipal.addEventListener('click', (e) => { 
-                e.stopPropagation(); 
-                if(contenedorListas.classList.contains('hidden')) { 
-                    contenedorListas.classList.remove('hidden'); 
-                    contenedorListas.classList.add('flex'); 
-                    iconoDesplegable.classList.add('rotar-180'); 
-                    btnMenuPrincipal.setAttribute('aria-expanded', 'true'); 
-                } else { 
-                    contenedorListas.classList.add('hidden'); 
-                    contenedorListas.classList.remove('flex'); 
-                    iconoDesplegable.classList.remove('rotar-180'); 
-                    btnMenuPrincipal.setAttribute('aria-expanded', 'false');
-                } 
-            });
+        <!-- COLUMNA DERECHA: KPIs -->
+        <div class="w-full xl:w-72 flex flex-col gap-6 justify-center">
+            <div class="bg-[#e6e6e6] text-gray-900 rounded-xl p-5 shadow-lg flex items-center justify-center text-center font-bold text-lg md:text-xl min-h-[70px] transform transition-transform hover:scale-105">
+                Tickets abiertos: {{ tickets_abiertos_count|default:0 }}
+            </div>
+            <div class="bg-[#e6e6e6] text-gray-900 rounded-xl p-5 shadow-lg flex items-center justify-center text-center font-bold text-lg md:text-xl min-h-[70px] transform transition-transform hover:scale-105">
+                %Cumplimiento: {{ cumplimiento_pct|default:100 }}%
+            </div>
+            <div class="bg-[#e6e6e6] text-gray-900 rounded-xl p-5 shadow-lg flex items-center justify-center text-center font-bold text-lg md:text-xl min-h-[70px] transform transition-transform hover:scale-105">
+                T. Promedio: {{ tiempo_promedio_hrs|default:"0.0" }}hrs
+            </div>
+            <div class="bg-[#e6e6e6] text-gray-900 rounded-xl p-5 shadow-lg flex items-center justify-center text-center font-bold text-lg md:text-xl min-h-[70px] transform transition-transform hover:scale-105">
+                Repuestos usados: {{ total_repuestos_usados|default:0 }}
+            </div>
+        </div>
 
-            // Toggle de la vista móvil
-            function toggleSidebar() { 
-                sidebar.classList.toggle('-translate-x-full'); 
-                overlay.classList.toggle('hidden'); 
-            }
-            toggleMobile.addEventListener('click', toggleSidebar);
-            document.getElementById('closeSidebar').addEventListener('click', toggleSidebar);
-            overlay.addEventListener('click', toggleSidebar);
-        });
-    </script>
-</body>
-</html>
+    </div>
+
+    {% if movimientos_salida %}
+    <hr class="border-gray-600">
+
+    <section>
+        <h3 class="text-xl md:text-2xl font-bold text-white tracking-wide mb-4">
+            Consumo operativo de repuestos en intervenciones técnicas
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 gap-4">
+            {% for mov in movimientos_salida %}
+            <div class="bg-[#e6e6e6] text-gray-900 rounded-xl p-4 shadow-md flex flex-col xl:flex-row justify-between items-start xl:items-center gap-2 text-sm md:text-base">
+                <div>
+                    <span class="font-bold text-orange-700">{{ mov.cantidad }}x {{ mov.repuesto.nombre }}</span>
+                    <span class="text-gray-600 text-xs">({{ mov.repuesto.codigo }})</span>
+                    {% if mov.ticket %}
+                    — Ticket <span class="font-bold text-blue-800">{{ mov.ticket.folio }}</span>
+                    {% endif %}
+                </div>
+                <div class="text-xs md:text-sm text-gray-700 flex items-center gap-3">
+                    <span>Técnico: <strong>{{ mov.registrado_por.get_full_name|default:mov.registrado_por.username }}</strong></span>
+                    <span>• {{ mov.fecha_movimiento|date:"d/m/Y H:i" }}</span>
+                    {% if mov.repuesto.requiere_reposicion %}
+                    <span class="bg-red-100 text-red-800 px-2 py-0.5 rounded-full text-xs font-bold">Stock Crítico ({{ mov.repuesto.stock_actual }})</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}

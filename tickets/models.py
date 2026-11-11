@@ -63,11 +63,15 @@ class Ticket(models.Model):
         ordering = ['-fecha_creacion']
 
     def save(self, *args, **kwargs):
-        # Autogenerador de folio secuencial (Ej: TK-00001)
+        # Autogenerador de folio secuencial único (Ej: TK-00001)
         if not self.folio:
             ultimo_ticket = Ticket.objects.order_by('id').last()
             nuevo_id = (ultimo_ticket.id + 1) if ultimo_ticket else 1
-            self.folio = f"TK-{nuevo_id:05d}"
+            candidato = f"TK-{nuevo_id:05d}"
+            while Ticket.objects.filter(folio=candidato).exists():
+                nuevo_id += 1
+                candidato = f"TK-{nuevo_id:05d}"
+            self.folio = candidato
             
         # Registro automático de fecha de asignación si se asigna un técnico y no tenía fecha
         if self.tecnico_asignado and not self.fecha_asignacion:

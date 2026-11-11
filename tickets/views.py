@@ -1,12 +1,14 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied, ValidationError
+from django.db import transaction
 from django.db.models import Q
-from django.core.exceptions import ValidationError
 from django.utils import timezone
 
 from users.permissions import cliente_required, tecnico_required, obtener_ruta_por_rol
 from catalogos.models import Categoria, EstadoTicket, Prioridad
+from inventario.models import Repuesto, MovimientoInventario
 from .models import (
     Ticket, 
     Equipo, 
@@ -29,8 +31,8 @@ from .emails import notificar_ticket_segundo_plano
 def cliente_historico_view(request):
     """
     Vista de consulta y seguimiento de tickets propios del cliente autenticado.
-    Incorpora motor de búsqueda por texto (folio, asunto, descripción)
-    y filtros rápidos por estado y categoría.
+    Incorpora motor de búsqueda por texto (folio, asunto, descripción),
+    filtros rápidos por estado y categoría, y ordenamiento dinámico.
     """
     tickets = Ticket.objects.filter(
         usuario=request.user
@@ -61,6 +63,17 @@ def cliente_historico_view(request):
         else:
             tickets = tickets.filter(categoria__nombre__iexact=categoria_filtro)
 
+    # 4. Ordenamiento (?orden=)
+    orden = request.GET.get('orden', 'Fecha').strip()
+    mapa_orden = {
+        'Fecha': '-fecha_creacion',
+        'Prioridad': '-prioridad__nivel',
+        'Estado': 'estado__nombre',
+        'Asunto': 'asunto',
+        'Código reporte': 'folio',
+    }
+    tickets = tickets.order_by(mapa_orden.get(orden, '-fecha_creacion'))
+
     context = {
         'tickets': tickets,
         'total_tickets': tickets.count(),
@@ -69,10 +82,44 @@ def cliente_historico_view(request):
         'query_actual': query,
         'estado_actual': estado_filtro,
         'categoria_actual': categoria_filtro,
+        'orden_actual': orden if orden in mapa_orden else 'Fecha',
         'usuario': request.user,
         'modulo': 'historico',
     }
     return render(request, 'cliente/historico.html', context)
+
+
+@login_required
+def detalle_ticket_view(request, ticket_id):
+    """
+    Vista de detalle completo de un ticket:
+    - Si es CLIENTE, solo puede consultar tickets propios.
+    - Si es TECNICO o GERENTE, puede consultar cualquier ticket del sistema.
+    """
+    ticket = get_object_or_404(
+        Ticket.objects.select_related(
+            'categoria', 'prioridad', 'estado', 'equipo', 'modalidad', 'usuario', 'tecnico_asignado'
+        ).prefetch_related('evidencias', 'intervenciones'),
+        id=ticket_id
+    )
+
+    rol_usuario = getattr(request.user, 'rol', 'CLIENTE')
+    if rol_usuario == 'CLIENTE' and ticket.usuario_id != request.user.id and not request.user.is_superuser:
+        raise PermissionDenied("No tienes permiso para ver los detalles de un ticket ajeno.")
+
+    evidencias = ticket.evidencias.all()
+    evidencia_principal = evidencias.first()
+    ultima_intervencion = ticket.intervenciones.order_by('-fecha_registro').first()
+
+    context = {
+        'ticket': ticket,
+        'evidencia': evidencia_principal,
+        'evidencias': evidencias,
+        'ultima_intervencion': ultima_intervencion,
+        'usuario': request.user,
+        'modulo': 'detalle_ticket',
+    }
+    return render(request, 'general/detalle_ticket.html', context)
 
 
 @login_required
@@ -98,9 +145,10 @@ def crear_ticket_view(request):
 
         equipo = None
         if serial_val:
-            equipo = Equipo.objects.filter(
-                Q(serial__iexact=serial_val) | Q(id__iexact=serial_val)
-            ).first()
+            filtro_eq = Q(serial__iexact=serial_val)
+            if str(serial_val).isdigit():
+                filtro_eq |= Q(id=int(serial_val))
+            equipo = Equipo.objects.filter(filtro_eq).first()
         if not equipo:
             equipo = Equipo.objects.first()
             if not equipo:
@@ -112,9 +160,10 @@ def crear_ticket_view(request):
 
         categoria = None
         if cat_val:
-            categoria = Categoria.objects.filter(
-                Q(nombre__iexact=cat_val) | Q(id__iexact=cat_val)
-            ).first()
+            filtro_cat = Q(nombre__iexact=cat_val)
+            if str(cat_val).isdigit():
+                filtro_cat |= Q(id=int(cat_val))
+            categoria = Categoria.objects.filter(filtro_cat).first()
         if not categoria:
             categoria = Categoria.objects.first()
             if not categoria:
@@ -195,19 +244,30 @@ def crear_ticket_view(request):
 def tecnico_tickets_asignados_view(request):
     """
     Bandeja de trabajo del personal técnico:
-    Muestra los tickets asignados al técnico en sesión y tickets disponibles sin asignar.
+    Muestra los tickets asignados al técnico en sesión y tickets disponibles sin asignar,
+    con soporte de ordenamiento dinámico (?orden=).
     """
+    orden = request.GET.get('orden', 'Prioridad').strip()
+    mapa_orden = {
+        'Prioridad': '-prioridad__nivel',
+        'Asunto': 'asunto',
+        'Estado': 'estado__nombre',
+        'Fecha': '-fecha_creacion',
+    }
+    campo_orden = mapa_orden.get(orden, '-prioridad__nivel')
+
     tickets_propios = Ticket.objects.filter(
         tecnico_asignado=request.user
-    ).select_related('categoria', 'prioridad', 'estado', 'equipo', 'usuario')
+    ).select_related('categoria', 'prioridad', 'estado', 'equipo', 'usuario').order_by(campo_orden)
 
     tickets_disponibles = Ticket.objects.filter(
         tecnico_asignado__isnull=True
-    ).select_related('categoria', 'prioridad', 'estado', 'equipo', 'usuario')
+    ).select_related('categoria', 'prioridad', 'estado', 'equipo', 'usuario').order_by('-fecha_creacion')
 
     context = {
         'tickets_asignados': tickets_propios,
         'tickets_disponibles': tickets_disponibles,
+        'orden_actual': orden if orden in mapa_orden else 'Prioridad',
         'usuario': request.user,
         'modulo': 'tickets_asignados',
     }
@@ -270,6 +330,9 @@ def solucionar_ticket_view(request, ticket_id=None):
     """
     Gestión y resolución de incidencias por el técnico:
     - Registro de diagnósticos e intervenciones técnicas con tiempo invertido.
+    - Lógica transaccional de uso de repuestos (MovimientoInventario con select_for_update),
+      validación de stock insuficiente y disparo de alertas de reposición.
+    - Subida de evidencia técnica adjunta y consulta de la evidencia del cliente.
     - Cambio de estado con Trazabilidad Inquebrantable en CambioEstado.
     - Marcado automático de fecha_cierre cuando el ticket pasa a Resuelto o Cerrado.
     """
@@ -277,10 +340,9 @@ def solucionar_ticket_view(request, ticket_id=None):
     if ticket_id:
         ticket = get_object_or_404(Ticket, id=ticket_id)
     else:
-        # Si no se pasó id por URL, tomar el primer ticket asignado o query param
         tid = request.GET.get('ticket_id') or request.POST.get('ticket_id')
-        if tid:
-            ticket = get_object_or_404(Ticket, id=tid)
+        if tid and str(tid).isdigit():
+            ticket = get_object_or_404(Ticket, id=int(tid))
         else:
             ticket = Ticket.objects.filter(tecnico_asignado=request.user).first()
 
@@ -290,61 +352,149 @@ def solucionar_ticket_view(request, ticket_id=None):
         tiempo_minutos = request.POST.get('tiempo_minutos', '0').strip()
         tiempo_val = int(tiempo_minutos) if tiempo_minutos.isdigit() else 0
 
+        # Captura de datos de uso de repuesto (opcional en la intervención)
+        repuesto_id_raw = (request.POST.get('repuesto_id') or '').strip()
+        cantidad_rep_raw = (request.POST.get('cantidad_repuesto') or '0').strip()
+
+        cantidad_repuesto = 0
+        if repuesto_id_raw:
+            try:
+                cantidad_repuesto = int(cantidad_rep_raw)
+                if cantidad_repuesto <= 0:
+                    raise ValueError()
+            except ValueError:
+                messages.error(request, "La cantidad del repuesto a utilizar debe ser un número entero mayor a cero.")
+                return redirect('tecnico_solucion_caso_detalle', ticket_id=ticket.id)
+
+        # Validar evidencia técnica antes de abrir la transacción si fue adjuntada
+        archivo_tecnico = request.FILES.get('evidencia_tecnica')
+        if archivo_tecnico:
+            try:
+                validar_evidencia(archivo_tecnico)
+            except ValidationError as e:
+                messages.error(request, f"Error en evidencia técnica '{archivo_tecnico.name}': {e.message}")
+                return redirect('tecnico_solucion_caso_detalle', ticket_id=ticket.id)
+
         # Obtener nuevo estado
         nuevo_estado = None
         if nuevo_estado_id:
-            nuevo_estado = EstadoTicket.objects.filter(
-                Q(id__iexact=nuevo_estado_id) | Q(nombre__iexact=nuevo_estado_id)
-            ).first()
+            filtro_est = Q(nombre__iexact=nuevo_estado_id)
+            if str(nuevo_estado_id).isdigit():
+                filtro_est |= Q(id=int(nuevo_estado_id))
+            nuevo_estado = EstadoTicket.objects.filter(filtro_est).first()
 
         if not nuevo_estado:
             nuevo_estado = EstadoTicket.objects.filter(nombre__in=['RESUELTO', 'Resuelto']).first() or ticket.estado
 
-        # 1. Trazabilidad Inquebrantable: Registrar CambioEstado
-        estado_anterior = ticket.estado
-        if estado_anterior != nuevo_estado:
-            ticket.estado = nuevo_estado
-            CambioEstado.objects.create(
-                ticket=ticket,
-                estado_anterior=estado_anterior,
-                estado_nuevo=nuevo_estado,
-                modificado_por=request.user,
-                motivo=diagnostico[:255] if diagnostico else "Cambio de estado por resolución técnica."
-            )
+        alerta_reposicion_msg = None
+        repuesto_usado_info = ""
 
-        # 2. Registrar Intervención y Diagnóstico
-        if diagnostico:
-            Intervencion.objects.create(
-                ticket=ticket,
-                tecnico=request.user,
-                descripcion=diagnostico,
-                tiempo_invertido_minutos=tiempo_val
-            )
+        try:
+            # Transacción Atómica: Si el descuento de inventario falla por stock insuficiente,
+            # se revierte absolutamente toda la operación sin alterar el ticket ni crear registros huérfanos.
+            with transaction.atomic():
+                # 0. Descuento transaccional de repuesto con bloqueo de fila (select_for_update)
+                if repuesto_id_raw:
+                    filtro_rep = Q(codigo__iexact=repuesto_id_raw)
+                    if repuesto_id_raw.isdigit():
+                        filtro_rep |= Q(id=int(repuesto_id_raw))
+                    repuesto_obj = Repuesto.objects.select_for_update().filter(filtro_rep).first()
+                    if not repuesto_obj:
+                        raise ValidationError("El repuesto seleccionado no existe en el inventario.")
 
-        # 3. Cálculo de Tiempos: Marcar automáticamente fecha_cierre al resolver/cerrar
-        nombres_cierre = ['RESUELTO', 'CERRADO', 'Resuelto', 'Cerrado']
-        if nuevo_estado.es_final or nuevo_estado.nombre in nombres_cierre:
-            if not ticket.fecha_cierre:
-                ticket.fecha_cierre = timezone.now()
+                    MovimientoInventario.objects.create(
+                        repuesto=repuesto_obj,
+                        tipo_movimiento='SALIDA',
+                        cantidad=cantidad_repuesto,
+                        ticket=ticket,
+                        registrado_por=request.user,
+                        observacion=diagnostico[:255] if diagnostico else f"Uso en intervención del ticket {ticket.folio}"
+                    )
+                    repuesto_obj.refresh_from_db()
+                    repuesto_usado_info = f" [Repuesto utilizado: {cantidad_repuesto}x {repuesto_obj.nombre} ({repuesto_obj.codigo})]"
 
-        # 4. Auditoría
-        Auditoria.objects.create(
-            ticket=ticket,
-            usuario=request.user,
-            accion=f"Actualización de estado a {nuevo_estado.nombre} con diagnóstico"
-        )
+                    # Detección automática de Alerta de Reposición (stock <= stock_minimo)
+                    if repuesto_obj.requiere_reposicion:
+                        alerta_reposicion_msg = (
+                            f"⚠️ ALERTA DE REPOSICIÓN: El repuesto '{repuesto_obj.nombre}' ({repuesto_obj.codigo}) "
+                            f"quedó en estado CRÍTICO ({repuesto_obj.stock_actual} disponibles / mínimo requerido: {repuesto_obj.stock_minimo})."
+                        )
+                        Auditoria.objects.create(
+                            ticket=ticket,
+                            usuario=request.user,
+                            accion=f"ALERTA_STOCK_CRITICO: {repuesto_obj.codigo} cayó a {repuesto_obj.stock_actual} unidades (mín: {repuesto_obj.stock_minimo})"
+                        )
 
-        ticket.save()
+                # Guardar evidencia técnica si existe
+                if archivo_tecnico:
+                    Evidencia.objects.create(
+                        ticket=ticket,
+                        archivo=archivo_tecnico,
+                        subido_por=request.user
+                    )
+
+                # 1. Trazabilidad Inquebrantable: Registrar CambioEstado
+                estado_anterior = ticket.estado
+                if estado_anterior != nuevo_estado:
+                    ticket.estado = nuevo_estado
+                    CambioEstado.objects.create(
+                        ticket=ticket,
+                        estado_anterior=estado_anterior,
+                        estado_nuevo=nuevo_estado,
+                        modificado_por=request.user,
+                        motivo=(diagnostico + repuesto_usado_info)[:255] if diagnostico else "Cambio de estado por resolución técnica."
+                    )
+
+                # 2. Registrar Intervención y Diagnóstico
+                if diagnostico or repuesto_usado_info:
+                    Intervencion.objects.create(
+                        ticket=ticket,
+                        tecnico=request.user,
+                        descripcion=f"{diagnostico}{repuesto_usado_info}".strip(),
+                        tiempo_invertido_minutos=tiempo_val
+                    )
+
+                # 3. Cálculo de Tiempos: Marcar automáticamente fecha_cierre al resolver/cerrar
+                nombres_cierre = ['RESUELTO', 'CERRADO', 'Resuelto', 'Cerrado']
+                if nuevo_estado.es_final or nuevo_estado.nombre in nombres_cierre:
+                    if not ticket.fecha_cierre:
+                        ticket.fecha_cierre = timezone.now()
+
+                # 4. Auditoría
+                Auditoria.objects.create(
+                    ticket=ticket,
+                    usuario=request.user,
+                    accion=f"Actualización de estado a {nuevo_estado.nombre} con diagnóstico{repuesto_usado_info}"
+                )
+
+                ticket.save()
+
+        except ValidationError as exc:
+            msg_err = exc.messages[0] if hasattr(exc, 'messages') and exc.messages else str(exc)
+            messages.error(request, msg_err)
+            return redirect('tecnico_solucion_caso_detalle', ticket_id=ticket.id)
 
         # 5. Notificación por correo al cliente
         tipo_notif = 'RESOLUCION' if nuevo_estado.nombre.upper() in ['RESUELTO', 'CERRADO'] else 'ACTUALIZACION'
         notificar_ticket_segundo_plano(ticket, tipo_notif, mensaje_extra=diagnostico)
 
+        if alerta_reposicion_msg:
+            messages.warning(request, alerta_reposicion_msg)
+
         messages.success(request, f"Diagnóstico registrado y ticket {ticket.folio} actualizado a {nuevo_estado.nombre}.")
         return redirect('tecnico_tickets_asignados')
 
+    evidencia_cliente = None
+    movimientos_ticket = []
+    if ticket:
+        evidencia_cliente = ticket.evidencias.filter(subido_por=ticket.usuario).first() or ticket.evidencias.first()
+        movimientos_ticket = ticket.repuestos_utilizados.select_related('repuesto', 'registrado_por').all()
+
     context = {
         'ticket': ticket,
+        'evidencia_cliente': evidencia_cliente,
+        'movimientos_ticket': movimientos_ticket,
+        'repuestos': Repuesto.objects.all().order_by('nombre'),
         'estados': EstadoTicket.objects.all(),
         'usuario': request.user,
         'modulo': 'solucion_caso',
@@ -411,7 +561,9 @@ def tecnico_historial_view(request):
     """
     tickets_atendidos = Ticket.objects.filter(
         Q(tecnico_asignado=request.user) | Q(intervenciones__tecnico=request.user)
-    ).distinct().select_related('categoria', 'prioridad', 'estado', 'usuario')
+    ).distinct().select_related(
+        'categoria', 'prioridad', 'estado', 'usuario'
+    ).prefetch_related('historial_estados', 'intervenciones')
 
     context = {
         'tickets': tickets_atendidos,

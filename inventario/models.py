@@ -1,6 +1,7 @@
-from django.db import models
+from django.db import models, transaction
 from django.conf import settings
 from django.core.exceptions import ValidationError
+
 
 class Repuesto(models.Model):
     codigo = models.CharField(max_length=50, unique=True, verbose_name="Código de Repuesto")
@@ -13,6 +14,16 @@ class Repuesto(models.Model):
         verbose_name = "Repuesto"
         verbose_name_plural = "Repuestos"
         ordering = ['nombre']
+
+    @property
+    def requiere_reposicion(self) -> bool:
+        """Indica si el stock actual alcanzó o cayó por debajo del umbral mínimo establecido."""
+        return self.stock_actual <= self.stock_minimo
+
+    @property
+    def estado_stock(self) -> str:
+        """Retorna la marca de estado operativa del repuesto ('CRITICO' u 'OPTIMO')."""
+        return "CRITICO" if self.requiere_reposicion else "OPTIMO"
 
     def __str__(self):
         return f"{self.codigo} - {self.nombre} (Stock: {self.stock_actual})"
@@ -49,28 +60,36 @@ class MovimientoInventario(models.Model):
         ordering = ['-fecha_movimiento']
 
     def save(self, *args, **kwargs):
-        # 1. Blindaje de Reglas de Negocio (Relación con el Ticket)
+        # 1. Blindaje de Reglas de Negocio (Relación con el Ticket y Cantidad válida)
+        if self.cantidad <= 0:
+            raise ValidationError("La cantidad del movimiento de inventario debe ser mayor a cero.")
+
         if self.tipo_movimiento == 'SALIDA' and not self.ticket:
             raise ValidationError("Toda SALIDA de inventario debe estar vinculada obligatoriamente a un Ticket justificativo.")
         
         if self.tipo_movimiento == 'ENTRADA' and self.ticket:
             raise ValidationError("Una ENTRADA por abastecimiento es administrativa y no puede estar vinculada a un Ticket.")
 
-        # 2. Lógica Matemática (Solo se calcula al crear el registro por primera vez)
-        if not self.pk: 
-            if self.tipo_movimiento == 'ENTRADA':
-                self.repuesto.stock_actual += self.cantidad
-            
-            elif self.tipo_movimiento == 'SALIDA':
-                # Prevención de stock negativo
-                if self.repuesto.stock_actual < self.cantidad:
-                    raise ValidationError(f"Stock insuficiente. Solo quedan {self.repuesto.stock_actual} unidades de {self.repuesto.nombre}.")
-                self.repuesto.stock_actual -= self.cantidad
-            
-            # Guardamos el nuevo cálculo en la tabla principal del repuesto
-            self.repuesto.save()
-            
-        super().save(*args, **kwargs)
+        # 2. Atomicidad de Base de Datos con Bloqueo Pesimista (select_for_update)
+        with transaction.atomic():
+            if not self.pk:
+                repuesto_bloqueado = Repuesto.objects.select_for_update().get(pk=self.repuesto_id)
+
+                if self.tipo_movimiento == 'ENTRADA':
+                    repuesto_bloqueado.stock_actual += self.cantidad
+
+                elif self.tipo_movimiento == 'SALIDA':
+                    # Validación estricta de stock disponible bajo bloqueo de fila
+                    if repuesto_bloqueado.stock_actual < self.cantidad:
+                        raise ValidationError(
+                            f"Stock insuficiente. Solo quedan {repuesto_bloqueado.stock_actual} unidades de {repuesto_bloqueado.nombre}."
+                        )
+                    repuesto_bloqueado.stock_actual -= self.cantidad
+
+                repuesto_bloqueado.save(update_fields=['stock_actual'])
+                self.repuesto.stock_actual = repuesto_bloqueado.stock_actual
+
+            super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.tipo_movimiento} de {self.cantidad}x {self.repuesto.nombre}"

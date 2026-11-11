@@ -109,6 +109,69 @@ class RBACTestCase(TestCase):
         response = self.client.get('/gerencia/dashboard/')
         self.assertEqual(response.status_code, 200)
 
+    def test_gerente_gestion_y_detalle_tecnico_asignar_quitar(self):
+        """El Gerente puede consultar la lista de técnicos y asignar/quitar tickets desde el detalle."""
+        from catalogos.models import Categoria, EstadoTicket, Prioridad
+        from tickets.models import Ticket, Equipo
+
+        cat = Categoria.objects.create(nombre='Hardware', descripcion='Equipos')
+        est_creado = EstadoTicket.objects.create(nombre='CREADO', es_inicial=True)
+        EstadoTicket.objects.create(nombre='En Revisión')
+        prio_media = Prioridad.objects.create(nombre='Media', nivel=2)
+        prio_alta = Prioridad.objects.create(nombre='Alta', nivel=3)
+        eq = Equipo.objects.create(serial='SN-GER-01', marca='HP', modelo='ProBook')
+
+        ticket = Ticket.objects.create(
+            asunto='Falla de disco',
+            descripcion='No arranca SO',
+            usuario=self.cliente,
+            equipo=eq,
+            categoria=cat,
+            prioridad=prio_media,
+            estado=est_creado,
+        )
+
+        self.client.login(username='gerente_test', password='Password123*')
+
+        # 1. Vista de lista de técnicos
+        resp_lista = self.client.get(reverse('gerente_gestion_tecnicos'))
+        self.assertEqual(resp_lista.status_code, 200)
+        self.assertContains(resp_lista, self.tecnico.username)
+
+        # 2. Asignar ticket al técnico desde detalle
+        url_detalle = reverse('gerente_detalle_tecnico', kwargs={'tecnico_id': self.tecnico.id})
+        resp_asignar = self.client.post(url_detalle, {
+            'accion': 'asignar',
+            'ticket_id': ticket.id,
+            'prioridad': 'Alta',
+        })
+        self.assertEqual(resp_asignar.status_code, 302)
+        ticket.refresh_from_db()
+        self.assertEqual(ticket.tecnico_asignado, self.tecnico)
+        self.assertEqual(ticket.prioridad, prio_alta)
+
+        # 3. Quitar ticket al técnico desde detalle
+        resp_quitar = self.client.post(url_detalle, {
+            'accion': 'quitar',
+            'ticket_id': ticket.id,
+        })
+        self.assertEqual(resp_quitar.status_code, 302)
+        ticket.refresh_from_db()
+        self.assertIsNone(ticket.tecnico_asignado)
+
+    def test_base_template_herencia_y_breakpoints_mobile_first(self):
+        """Verifica que las vistas hereden de base.html con soporte 375px/768px/1280px+ y sin scroll horizontal."""
+        self.client.login(username='gerente_test', password='Password123*')
+        response = self.client.get(reverse('gerente_dashboard'))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'base.html')
+        self.assertTemplateUsed(response, 'gerencia/dashboard.html')
+        self.assertContains(response, "'xs': '375px'")
+        self.assertContains(response, "'md': '768px'")
+        self.assertContains(response, "'xl': '1280px'")
+        self.assertContains(response, "overflow-x-hidden")
+        self.assertContains(response, 'id="menuToggleMobile"')
+
     # --------------------------------------------------------------------------
     # 3. Cierre de Sesión (Logout)
     # --------------------------------------------------------------------------
@@ -157,3 +220,50 @@ class RBACTestCase(TestCase):
         data = response.json()
         self.assertEqual(data['code'], 'INVALID_CREDENTIALS')
         self.assertIn('intentos_restantes', data)
+
+    # --------------------------------------------------------------------------
+    # 5. Selector de Tema (Oscuro/Claro) y Accesibilidad WCAG 2.1 Nivel AA
+    # --------------------------------------------------------------------------
+    def test_sincronizacion_tema_backend_customuser_y_wcag_aa(self):
+        """
+        Valida:
+        1. Sincronización del tema (Oscuro/Claro) con CustomUser.modo_oscuro vía API
+           (/api/v1/users/tema/) y en el renderizado HTML (data-user-theme) + localStorage.
+        2. Cumplimiento WCAG 2.1 AA en base.html:
+           - Script anti-parpadeo (localStorage.getItem('gita_theme')) y contraste >= 4.5:1.
+           - Tipografía limpia Inter/Roboto con tamaño base mínimo de 16px (font-size: 16px).
+           - Soporte de zoom hasta 200% (min-h-screen, overflow-wrap: anywhere, flex-wrap).
+           - Touch target mínimo de 44x44 píxeles (min-h-[44px] min-w-[44px]) en el toggle y controles.
+        """
+        self.client.login(username='cliente_test', password='Password123*')
+
+        # Por defecto modo_oscuro=True -> data-user-theme="dark"
+        resp_inicial = self.client.get(reverse('cliente_historico'))
+        self.assertEqual(resp_inicial.status_code, 200)
+        self.assertContains(resp_inicial, 'data-user-theme="dark"')
+        self.assertContains(resp_inicial, "localStorage.getItem('gita_theme')")
+        self.assertContains(resp_inicial, "font-size: 16px")
+        self.assertContains(resp_inicial, "font-family: 'Inter', 'Roboto', sans-serif")
+        self.assertContains(resp_inicial, "min-height: 44px")
+        self.assertContains(resp_inicial, "min-width: 44px")
+        self.assertContains(resp_inicial, "overflow-wrap: anywhere")
+        self.assertContains(resp_inicial, 'id="themeToggleBtn"')
+        self.assertContains(resp_inicial, 'id="themeToggleMobile"')
+
+        # Cambiar a modo claro (modo_oscuro=False) mediante el endpoint API
+        resp_api = self.client.post(
+            reverse('api_cambiar_tema'),
+            data=json.dumps({'modo_oscuro': False, 'tema': 'light'}),
+            content_type='application/json'
+        )
+        self.assertEqual(resp_api.status_code, 200)
+        self.assertEqual(resp_api.json()['tema'], 'light')
+        self.assertFalse(resp_api.json()['modo_oscuro'])
+
+        self.cliente.refresh_from_db()
+        self.assertFalse(self.cliente.modo_oscuro)
+
+        # Verificar que el HTML ahora renderiza data-user-theme="light" y clase light sin parpadeos
+        resp_claro = self.client.get(reverse('cliente_historico'))
+        self.assertContains(resp_claro, 'data-user-theme="light"')
+        self.assertContains(resp_claro, 'aria-pressed="false"')

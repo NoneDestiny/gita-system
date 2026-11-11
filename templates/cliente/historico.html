@@ -1,349 +1,276 @@
-<!DOCTYPE html>
-<html lang="es" class="antialiased">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GITA - Histórico de Tickets</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; overflow-x: hidden; }
-        
-        /* Accesibilidad: Focus ring explícito */
-        *:focus-visible { outline: 2px solid #D97706; outline-offset: 2px; }
-        
-        #sidebar { transition: transform 0.3s ease-in-out; }
-        .rotar-180 { transform: rotate(180deg); }
-        
-        /* Animación para el dropdown del filtro */
-        @keyframes fadeDown {
-            from { opacity: 0; transform: translateY(-5px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-down { animation: fadeDown 0.2s ease-out forwards; }
-    </style>
-</head>
-<body class="bg-[#303338] text-gray-200 h-screen flex flex-col md:flex-row overflow-hidden relative">
+{% extends 'base.html' %}
 
-    <!-- CABECERA MÓVIL -->
-    <header class="md:hidden flex items-center justify-between bg-[#2a2d31] p-4 shadow-md z-40 relative">
-        <button id="menuToggleMobile" class="text-white p-2 min-h-[44px] min-w-[44px] focus-visible:ring-2 focus-visible:ring-orange-500 rounded" aria-expanded="false" aria-controls="sidebar" aria-label="Abrir menú de navegación">
-            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-        </button>
-        <h1 class="text-xl font-bold">GITA System</h1>
-        <div class="w-10 h-10 bg-gray-500 rounded-full flex items-center justify-center">👤</div>
-    </header>
+{% block title %}GITA - Histórico de Tickets{% endblock %}
 
-    <!-- SIDEBAR / MENÚ LATERAL -->
-    <aside id="sidebar" class="absolute md:relative z-50 w-64 md:w-72 h-full bg-[#303338] border-r border-gray-600 flex flex-col transform -translate-x-full md:translate-x-0">
-        <div class="md:hidden p-4 flex justify-end border-b border-gray-600">
-            <button id="closeSidebar" class="text-gray-400 hover:text-white p-2 min-h-[44px] min-w-[44px]" aria-label="Cerrar menú">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+{% block content %}
+<div class="flex-1 p-4 md:p-8 flex flex-col max-w-6xl mx-auto w-full gap-6">
+    
+    {% if messages %}
+    <div class="space-y-2">
+        {% for message in messages %}
+        <div class="p-4 rounded-lg font-semibold text-sm {% if message.tags == 'error' %}bg-red-500/20 text-red-300 border border-red-500/50{% else %}bg-green-500/20 text-green-300 border border-green-500/50{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Barra Superior: Título y Filtro -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        
+        <!-- Título -->
+        <div class="bg-[#e6e6e6] text-gray-900 px-5 py-2 rounded-full font-semibold text-lg md:text-xl flex items-center gap-2 shadow-md">
+            <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <span>Histórico Tickets Creados</span>
+        </div>
+
+        <!-- Dropdown de Ordenar (Accesibilidad UX Anotada) -->
+        <div class="flex items-center gap-3 relative" id="filtroDropdownContainer">
+            <span class="font-medium text-gray-300">Ordenar por:</span>
+            <button id="btnFiltro" type="button" aria-haspopup="listbox" aria-expanded="false" class="bg-[#e6e6e6] text-gray-900 font-semibold px-6 py-2 rounded-full min-h-[44px] min-w-[140px] flex items-center justify-between gap-4 hover:bg-gray-300 transition-colors focus:ring-2 focus:ring-orange-500 shadow-md">
+                <span id="filtroSeleccionado">{{ orden_actual|default:"Fecha" }}</span>
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+
+            <!-- Lista Opciones Filtro (Oculta por defecto) -->
+            <ul id="listaFiltros" role="listbox" tabindex="-1" class="hidden absolute top-full mt-2 right-0 w-48 bg-[#e6e6e6] rounded-md shadow-xl border border-gray-300 overflow-hidden z-50 animate-fade-down text-gray-900 font-medium">
+                <li role="option" data-orden="Fecha" tabindex="0" class="px-4 py-3 hover:bg-gray-300 cursor-pointer focus:bg-gray-300 focus:outline-none transition-colors">Fecha</li>
+                <li role="option" data-orden="Prioridad" tabindex="0" class="px-4 py-3 hover:bg-gray-300 cursor-pointer focus:bg-gray-300 focus:outline-none transition-colors border-t border-gray-300">Prioridad</li>
+                <li role="option" data-orden="Estado" tabindex="0" class="px-4 py-3 hover:bg-gray-300 cursor-pointer focus:bg-gray-300 focus:outline-none transition-colors border-t border-gray-300">Estado</li>
+                <li role="option" data-orden="Asunto" tabindex="0" class="px-4 py-3 hover:bg-gray-300 cursor-pointer focus:bg-gray-300 focus:outline-none transition-colors border-t border-gray-300">Asunto</li>
+                <li role="option" data-orden="Código reporte" tabindex="0" class="px-4 py-3 hover:bg-gray-300 cursor-pointer focus:bg-gray-300 focus:outline-none transition-colors border-t border-gray-300">Código reporte</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Barra de Búsqueda y Filtros Rápidos Conectada a BD (1 col en 375px, 2 cols en 768px, fila completa en 1280px+) -->
+    <form method="GET" action="{% url 'cliente_historico' %}" id="formFiltrosCliente" class="bg-[#404348] p-4 rounded-xl border border-gray-600 grid grid-cols-1 md:grid-cols-2 xl:flex gap-3 items-stretch xl:items-center shadow-md">
+        <input type="hidden" name="orden" id="inputOrdenHidden" value="{{ orden_actual|default:'Fecha' }}">
+        <div class="md:col-span-2 xl:flex-1">
+            <label for="inputBusqueda" class="sr-only">Buscar por código, asunto o descripción</label>
+            <input type="text" id="inputBusqueda" name="q" value="{{ query_actual }}" placeholder="Buscar por código (ej. TK-0001), asunto o descripción..." class="w-full bg-[#e6e6e6] text-gray-900 font-medium rounded-lg px-4 py-2 min-h-[44px] placeholder-gray-600 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+        </div>
+        <div>
+            <label for="selectEstado" class="sr-only">Filtrar por estado</label>
+            <select id="selectEstado" name="estado" class="w-full xl:w-44 bg-[#e6e6e6] text-gray-900 font-semibold rounded-lg px-3 py-2 min-h-[44px] focus:ring-2 focus:ring-orange-500 focus:outline-none">
+                <option value="">Todos los estados</option>
+                {% for est in estados %}
+                <option value="{{ est.nombre }}" {% if estado_actual == est.nombre or estado_actual == est.id|stringformat:"s" %}selected{% endif %}>{{ est.nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label for="selectCategoria" class="sr-only">Filtrar por categoría</label>
+            <select id="selectCategoria" name="categoria" class="w-full xl:w-44 bg-[#e6e6e6] text-gray-900 font-semibold rounded-lg px-3 py-2 min-h-[44px] focus:ring-2 focus:ring-orange-500 focus:outline-none">
+                <option value="">Todas las categorías</option>
+                {% for cat in categorias %}
+                <option value="{{ cat.nombre }}" {% if categoria_actual == cat.nombre or categoria_actual == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="md:col-span-2 xl:w-auto flex gap-2">
+            <button type="submit" class="bg-[#d47c35] text-gray-900 font-bold px-5 py-2 rounded-lg min-h-[44px] flex-1 xl:flex-none hover:bg-[#b86729] transition-colors shadow">
+                Filtrar
+            </button>
+            {% if query_actual or estado_actual or categoria_actual %}
+            <a href="{% url 'cliente_historico' %}" class="bg-gray-600 text-white font-semibold px-4 py-2 rounded-lg min-h-[44px] flex items-center justify-center hover:bg-gray-500 transition-colors">
+                Limpiar
+            </a>
+            {% endif %}
+        </div>
+    </form>
+
+    <!-- VISTA ESCRITORIO (1280px+): TABLA SEMÁNTICA -->
+    <div class="hidden xl:block w-full overflow-hidden mt-2">
+        <table class="w-full text-center border-separate" style="border-spacing: 12px 0;">
+            <thead>
+                <tr class="text-white text-base tracking-wide">
+                    <th scope="col" class="font-normal pb-4">Código reporte</th>
+                    <th scope="col" class="font-normal pb-4">Fecha</th>
+                    <th scope="col" class="font-normal pb-4">Asunto</th>
+                    <th scope="col" class="font-normal pb-4">Estado</th>
+                    <th scope="col" class="font-normal pb-4">Prioridad</th>
+                </tr>
+            </thead>
+            <tbody class="text-gray-900 font-medium text-sm lg:text-base">
+                {% for ticket in tickets %}
+                <tr>
+                    <td class="bg-[#e6e6e6] py-3 px-2 {% if forloop.first %}rounded-t-xl{% endif %} {% if forloop.last %}rounded-b-xl{% endif %}">
+                        <a href="{% url 'detalle_ticket' ticket.id %}" class="font-bold text-orange-600 hover:text-orange-800 hover:underline focus:outline-none focus:ring-2 focus:ring-orange-500 rounded px-2 py-1 inline-block" title="Ver detalles del reporte {{ ticket.folio }}">
+                            {{ ticket.folio }}
+                        </a>
+                    </td>
+                    <td class="bg-[#e6e6e6] py-3 px-2 {% if forloop.first %}rounded-t-xl{% endif %} {% if forloop.last %}rounded-b-xl{% endif %}">
+                        {{ ticket.fecha_creacion|date:"d/m/Y" }}
+                    </td>
+                    <td class="bg-[#e6e6e6] py-3 px-2 {% if forloop.first %}rounded-t-xl{% endif %} {% if forloop.last %}rounded-b-xl{% endif %}">
+                        <a href="{% url 'detalle_ticket' ticket.id %}" class="hover:underline text-gray-900">
+                            {{ ticket.asunto }}
+                        </a>
+                    </td>
+                    <td class="bg-[#e6e6e6] py-3 px-2 {% if forloop.first %}rounded-t-xl{% endif %} {% if forloop.last %}rounded-b-xl{% endif %}">
+                        <span class="inline-block px-2.5 py-1 text-xs rounded-full bg-gray-700 text-white font-semibold">
+                            {{ ticket.estado.nombre }}
+                        </span>
+                    </td>
+                    <td class="bg-[#e6e6e6] py-3 px-2 {% if forloop.first %}rounded-t-xl{% endif %} {% if forloop.last %}rounded-b-xl{% endif %} font-semibold">
+                        {{ ticket.prioridad.nombre }}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="bg-[#e6e6e6] py-8 text-center text-gray-600 italic rounded-xl">
+                        No se encontraron tickets con los criterios seleccionados. 
+                        <a href="{% url 'crear_reporte' %}" class="text-orange-600 font-bold hover:underline ml-1">¡Crea un nuevo reporte aquí!</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- VISTA MÓVIL (375px: 1 columna) Y TABLETA (768px: 2 columnas) -->
+    <div class="xl:hidden grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+        {% for ticket in tickets %}
+        <article class="bg-[#e6e6e6] text-gray-900 rounded-xl p-5 shadow-md flex flex-col justify-between">
+            <div>
+                <div class="flex justify-between items-center border-b border-gray-400 pb-2 mb-3">
+                    <span class="font-bold text-sm text-gray-600">CÓDIGO:</span>
+                    <a href="{% url 'detalle_ticket' ticket.id %}" class="text-orange-600 font-bold hover:underline">{{ ticket.folio }}</a>
+                </div>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between gap-2"><span class="font-semibold text-gray-600">Fecha:</span> <span>{{ ticket.fecha_creacion|date:"d/m/Y" }}</span></div>
+                    <div class="flex justify-between gap-2"><span class="font-semibold text-gray-600">Asunto:</span> <span class="truncate">{{ ticket.asunto }}</span></div>
+                    <div class="flex justify-between gap-2"><span class="font-semibold text-gray-600">Estado:</span> <span>{{ ticket.estado.nombre }}</span></div>
+                    <div class="flex justify-between gap-2"><span class="font-semibold text-gray-600">Prioridad:</span> <span>{{ ticket.prioridad.nombre }}</span></div>
+                </div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-gray-300 flex justify-end">
+                <a href="{% url 'detalle_ticket' ticket.id %}" class="bg-[#d47c35] text-gray-900 font-bold px-4 py-2 rounded-md text-xs min-h-[44px] flex items-center hover:bg-[#b86729] transition-colors">
+                    Ver detalles
+                </a>
+            </div>
+        </article>
+        {% empty %}
+        <div class="col-span-full bg-[#e6e6e6] text-gray-900 rounded-xl p-5 text-center italic">
+            No tienes tickets registrados aún. 
+            <a href="{% url 'crear_reporte' %}" class="text-orange-600 font-bold hover:underline block mt-2">Crear mi primer reporte</a>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- PAGINACIÓN Y CONTROLES (Ergonomía Táctil 44x44px) -->
+    <div class="flex justify-between items-center mt-auto pt-6 text-white">
+        <span class="text-sm md:text-base font-medium">Página 1 de 1</span>
+        
+        <div class="flex gap-4">
+            <button disabled aria-label="Página anterior" class="min-h-[44px] min-w-[44px] flex flex-col items-center justify-center opacity-50 cursor-not-allowed">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                <span class="text-[10px] uppercase mt-1">Retroceder</span>
+            </button>
+            
+            <button disabled aria-label="Página siguiente" class="min-h-[44px] min-w-[44px] flex flex-col items-center justify-center opacity-50 cursor-not-allowed">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                <span class="text-[10px] uppercase mt-1">Avanzar</span>
             </button>
         </div>
+    </div>
 
-        <nav class="flex-1 p-6 overflow-visible">
-            <div class="relative w-full" id="wrapperDesplegable">
-                <button id="btnMenuPrincipal" aria-expanded="false" aria-controls="contenedorListas" class="w-full flex items-center justify-between bg-[#d9d9d9] text-gray-900 font-bold px-4 py-3 rounded min-h-[44px] hover:bg-gray-300 transition-colors focus:ring-2 focus:ring-orange-500 shadow-md">
-                    <div class="flex items-center gap-2">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-                        Menú Principal
-                    </div>
-                    <svg id="iconoDesplegable" class="w-5 h-5 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                </button>
+</div>
+{% endblock %}
 
-                <div id="contenedorListas" class="hidden absolute top-full mt-2 left-0 w-full z-50 bg-[#404348] border border-gray-600 rounded-md shadow-2xl p-3 flex-col gap-3">
-                    
-                    <div id="menu-cliente" class="menu-group flex flex-col gap-2">
-                        {% if request.user.rol == 'TECNICO' %}
-                        <a href="{% url 'tecnico_tickets_asignados' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Tickets asignados</a>
-                        <a href="{% url 'crear_reporte' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Nuevo Reporte</a>
-                        <a href="{% url 'tecnico_historial' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 border-2 border-orange-500 shadow-sm" aria-current="page">Histórico</a>
-                        <a href="{% url 'datos_usuario' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Mis datos</a>
-                        <a href="{% url 'mis_equipos' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Mis Equipos</a>
-                        {% elif request.user.rol == 'GERENTE' %}
-                        <a href="{% url 'gerente_dashboard' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Dashboard</a>
-                        <a href="{% url 'gerente_gestion_tecnicos' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Gestión técnicos</a>
-                        <a href="{% url 'gerente_inventario' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Inventario</a>
-                        <a href="{% url 'crear_reporte' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Nuevo Reporte</a>
-                        <a href="{% url 'cliente_historico' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 border-2 border-orange-500 shadow-sm" aria-current="page">Histórico</a>
-                        <a href="{% url 'datos_usuario' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Mis datos</a>
-                        <a href="{% url 'mis_equipos' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Mis Equipos</a>
-                        {% else %}
-                        <a href="{% url 'crear_reporte' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Nuevo reporte</a>
-                        <a href="{% url 'datos_usuario' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Mis datos</a>
-                        <a href="{% url 'cliente_historico' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 border-2 border-orange-500 shadow-sm" aria-current="page">Histórico</a>
-                        <a href="{% url 'mis_equipos' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm">Mis Equipos</a>
-                        {% endif %}
-                        <a href="{% url 'logout' %}" class="bg-red-800 text-white font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-red-700 transition-colors shadow-sm mt-2">Cerrar Sesión</a>
-                    </div>
-                </div>
-            </div>
-        </nav>
-    </aside>
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const btnFiltro = document.getElementById('btnFiltro');
+        const listaFiltros = document.getElementById('listaFiltros');
+        const filtroSeleccionado = document.getElementById('filtroSeleccionado');
+        const opciones = listaFiltros.querySelectorAll('[role="option"]');
+        const inputOrdenHidden = document.getElementById('inputOrdenHidden');
+        const formFiltrosCliente = document.getElementById('formFiltrosCliente');
+        let indexEnfocado = -1;
 
-    <div id="sidebarOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden md:hidden"></div>
+        function cerrarFiltro() {
+            listaFiltros.classList.add('hidden');
+            btnFiltro.setAttribute('aria-expanded', 'false');
+            indexEnfocado = -1;
+        }
 
-    <!-- CONTENIDO PRINCIPAL -->
-    <main class="flex-1 flex flex-col h-full overflow-y-auto w-full pb-8">
-        
-        <!-- Cabecera Desktop -->
-        <header class="hidden md:grid grid-cols-3 items-center p-6 bg-[#2a2d31]/40 border-b border-gray-700/50">
-            <div></div>
-            <h1 class="text-2xl font-bold text-white tracking-wider text-center">
-                GITA - Gestor de Incidencias TI
-            </h1>
-            <div class="flex justify-end">
-                <div class="flex items-center gap-3 bg-[#404348] px-4 py-2 rounded-full shadow-md">
-                    <div class="w-10 h-10 bg-gray-300 text-gray-800 rounded-full flex items-center justify-center font-bold">👤</div>
-                    <span class="text-lg font-medium">{{ request.user.username }}</span>
-                    <a href="{% url 'logout' %}" class="text-xs text-red-400 hover:text-red-300 underline ml-2" title="Cerrar sesión">Salir</a>
-                </div>
-            </div>
-        </header>
+        function abrirFiltro() {
+            listaFiltros.classList.remove('hidden');
+            btnFiltro.setAttribute('aria-expanded', 'true');
+        }
 
-        <!-- CONTENEDOR CENTRAL: HISTÓRICO -->
-        <div class="flex-1 p-4 md:p-8 flex flex-col max-w-6xl mx-auto w-full gap-6">
-            
-            <!-- Barra Superior: Título y Filtro -->
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                
-                <!-- Título -->
-                <div class="bg-[#e6e6e6] text-gray-900 px-5 py-2 rounded-full font-semibold text-lg md:text-xl flex items-center gap-2 shadow-md">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    Histórico Tickets Creados
-                </div>
-
-                <!-- Dropdown de Filtro (Accesibilidad UX Anotada) -->
-                <div class="flex items-center gap-3 relative" id="filtroDropdownContainer">
-                    <span class="font-medium text-gray-300">Filtrar por:</span>
-                    <button id="btnFiltro" aria-haspopup="listbox" aria-expanded="false" class="bg-[#e6e6e6] text-gray-900 font-semibold px-6 py-2 rounded-full min-h-[44px] min-w-[140px] flex items-center justify-between gap-4 hover:bg-gray-300 transition-colors focus:ring-2 focus:ring-orange-500 shadow-md">
-                        <span id="filtroSeleccionado">Fecha</span>
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                    </button>
-
-                    <!-- Lista Opciones Filtro (Oculta por defecto) -->
-                    <ul id="listaFiltros" role="listbox" tabindex="-1" class="hidden absolute top-full mt-2 right-0 w-48 bg-[#e6e6e6] rounded-md shadow-xl border border-gray-300 overflow-hidden z-50 animate-fade-down text-gray-900 font-medium">
-                        <!-- ID's y role="option" para lectores de pantalla y navegación por teclado -->
-                        <li role="option" tabindex="0" class="px-4 py-3 hover:bg-gray-300 cursor-pointer focus:bg-gray-300 focus:outline-none transition-colors">Fecha</li>
-                        <li role="option" tabindex="0" class="px-4 py-3 hover:bg-gray-300 cursor-pointer focus:bg-gray-300 focus:outline-none transition-colors border-t border-gray-300">Prioridad</li>
-                        <li role="option" tabindex="0" class="px-4 py-3 hover:bg-gray-300 cursor-pointer focus:bg-gray-300 focus:outline-none transition-colors border-t border-gray-300">Estado</li>
-                        <li role="option" tabindex="0" class="px-4 py-3 hover:bg-gray-300 cursor-pointer focus:bg-gray-300 focus:outline-none transition-colors border-t border-gray-300">Asunto</li>
-                        <li role="option" tabindex="0" class="px-4 py-3 hover:bg-gray-300 cursor-pointer focus:bg-gray-300 focus:outline-none transition-colors border-t border-gray-300">Código reporte</li>
-                    </ul>
-                </div>
-            </div>
-
-            <!-- VISTA ESCRITORIO / TABLET: TABLA SEMÁNTICA (Estilo Columnas) -->
-            <div class="hidden md:block w-full overflow-hidden mt-4">
-                <table class="w-full text-center border-separate" style="border-spacing: 12px 0;">
-                    <thead>
-                        <tr class="text-white text-base tracking-wide">
-                            <th scope="col" class="font-normal pb-4">Código reporte</th>
-                            <th scope="col" class="font-normal pb-4">Fecha</th>
-                            <th scope="col" class="font-normal pb-4">Asunto</th>
-                            <th scope="col" class="font-normal pb-4">Estado</th>
-                            <th scope="col" class="font-normal pb-4">Prioridad</th>
-                        </tr>
-                    </thead>
-                    <tbody class="text-gray-900 font-medium text-sm lg:text-base">
-                        {% for ticket in tickets %}
-                        <tr>
-                            <td class="bg-[#e6e6e6] py-3 px-2 {% if forloop.first %}rounded-t-xl{% endif %} {% if forloop.last %}rounded-b-xl{% endif %}">
-                                <span class="font-bold text-orange-600">{{ ticket.folio }}</span>
-                            </td>
-                            <td class="bg-[#e6e6e6] py-3 px-2 {% if forloop.first %}rounded-t-xl{% endif %} {% if forloop.last %}rounded-b-xl{% endif %}">
-                                {{ ticket.fecha_creacion|date:"d/m/Y" }}
-                            </td>
-                            <td class="bg-[#e6e6e6] py-3 px-2 {% if forloop.first %}rounded-t-xl{% endif %} {% if forloop.last %}rounded-b-xl{% endif %}">
-                                {{ ticket.asunto }}
-                            </td>
-                            <td class="bg-[#e6e6e6] py-3 px-2 {% if forloop.first %}rounded-t-xl{% endif %} {% if forloop.last %}rounded-b-xl{% endif %}">
-                                <span class="inline-block px-2.5 py-1 text-xs rounded-full bg-gray-700 text-white font-semibold">
-                                    {{ ticket.estado.nombre }}
-                                </span>
-                            </td>
-                            <td class="bg-[#e6e6e6] py-3 px-2 {% if forloop.first %}rounded-t-xl{% endif %} {% if forloop.last %}rounded-b-xl{% endif %} font-semibold">
-                                {{ ticket.prioridad.nombre }}
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="5" class="bg-[#e6e6e6] py-8 text-center text-gray-600 italic rounded-xl">
-                                No tienes tickets registrados aún. 
-                                <a href="{% url 'crear_reporte' %}" class="text-orange-600 font-bold hover:underline ml-1">¡Crea tu primer reporte aquí!</a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- VISTA MÓVIL: CARD LAYOUT -->
-            <div class="md:hidden flex flex-col gap-4 mt-4">
-                {% for ticket in tickets %}
-                <div class="bg-[#e6e6e6] text-gray-900 rounded-xl p-5 shadow-md">
-                    <div class="flex justify-between items-center border-b border-gray-400 pb-2 mb-3">
-                        <span class="font-bold text-sm text-gray-600">CÓDIGO:</span>
-                        <span class="text-orange-600 font-bold">{{ ticket.folio }}</span>
-                    </div>
-                    <div class="space-y-2 text-sm">
-                        <div class="flex justify-between"><span class="font-semibold text-gray-600">Fecha:</span> <span>{{ ticket.fecha_creacion|date:"d/m/Y" }}</span></div>
-                        <div class="flex justify-between"><span class="font-semibold text-gray-600">Asunto:</span> <span>{{ ticket.asunto }}</span></div>
-                        <div class="flex justify-between"><span class="font-semibold text-gray-600">Estado:</span> <span>{{ ticket.estado.nombre }}</span></div>
-                        <div class="flex justify-between"><span class="font-semibold text-gray-600">Prioridad:</span> <span>{{ ticket.prioridad.nombre }}</span></div>
-                    </div>
-                </div>
-                {% empty %}
-                <div class="bg-[#e6e6e6] text-gray-900 rounded-xl p-5 text-center italic">
-                    No tienes tickets registrados aún. 
-                    <a href="{% url 'crear_reporte' %}" class="text-orange-600 font-bold hover:underline block mt-2">Crear mi primer reporte</a>
-                </div>
-                {% endfor %}
-            </div>
-
-            <!-- PAGINACIÓN Y CONTROLES (Ergonomía Táctil 44x44px) -->
-            <div class="flex justify-between items-center mt-auto pt-6 text-white">
-                <span class="text-sm md:text-base font-medium">Página 1 de 1</span>
-                
-                <div class="flex gap-4">
-                    <!-- Atributo disabled y opacidad reducida para indicar estado inactivo -->
-                    <button disabled aria-label="Página anterior" class="min-h-[44px] min-w-[44px] flex flex-col items-center justify-center opacity-50 cursor-not-allowed">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-                        <span class="text-[10px] uppercase mt-1">Retroceder</span>
-                    </button>
-                    
-                    <button disabled aria-label="Página siguiente" class="min-h-[44px] min-w-[44px] flex flex-col items-center justify-center opacity-50 cursor-not-allowed">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                        <span class="text-[10px] uppercase mt-1">Avanzar</span>
-                    </button>
-                </div>
-            </div>
-
-        </div>
-    </main>
-
-    <!-- Script de Interactividad Completo -->
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            /* === LÓGICA DEL DROPDOWN DE FILTRO CON NAVEGACIÓN POR TECLADO === */
-            const btnFiltro = document.getElementById('btnFiltro');
-            const listaFiltros = document.getElementById('listaFiltros');
-            const filtroSeleccionado = document.getElementById('filtroSeleccionado');
-            const opciones = listaFiltros.querySelectorAll('[role="option"]');
-            let indexEnfocado = -1;
-
-            function cerrarFiltro() {
-                listaFiltros.classList.add('hidden');
-                btnFiltro.setAttribute('aria-expanded', 'false');
-                btnFiltro.focus();
-                indexEnfocado = -1;
+        btnFiltro.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (listaFiltros.classList.contains('hidden')) {
+                abrirFiltro();
+            } else {
+                cerrarFiltro();
             }
+        });
 
-            function abrirFiltro() {
-                listaFiltros.classList.remove('hidden');
-                btnFiltro.setAttribute('aria-expanded', 'true');
-            }
-
-            // Click en el botón de filtro
-            btnFiltro.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (listaFiltros.classList.contains('hidden')) {
-                    abrirFiltro();
-                } else {
-                    cerrarFiltro();
+        opciones.forEach((opcion) => {
+            opcion.addEventListener('click', () => {
+                const valorOrden = opcion.dataset.orden || opcion.textContent.trim();
+                filtroSeleccionado.textContent = valorOrden;
+                if (inputOrdenHidden && formFiltrosCliente) {
+                    inputOrdenHidden.value = valorOrden;
+                    formFiltrosCliente.submit();
                 }
+                cerrarFiltro();
             });
-
-            // Selección de opción por Clic o Enter
-            opciones.forEach((opcion, index) => {
-                opcion.addEventListener('click', () => {
-                    filtroSeleccionado.textContent = opcion.textContent;
-                    cerrarFiltro();
-                });
-                
-                opcion.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        filtroSeleccionado.textContent = opcion.textContent;
-                        cerrarFiltro();
-                    }
-                });
-            });
-
-            // Navegación por teclado (Flechas) en el Dropdown
-            btnFiltro.addEventListener('keydown', (e) => {
-                if (e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    if (listaFiltros.classList.contains('hidden')) abrirFiltro();
-                    indexEnfocado = 0;
-                    opciones[indexEnfocado].focus();
-                }
-            });
-
-            listaFiltros.addEventListener('keydown', (e) => {
-                if (e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    if (indexEnfocado < opciones.length - 1) {
-                        indexEnfocado++;
-                        opciones[indexEnfocado].focus();
-                    }
-                } else if (e.key === 'ArrowUp') {
-                    e.preventDefault();
-                    if (indexEnfocado > 0) {
-                        indexEnfocado--;
-                        opciones[indexEnfocado].focus();
-                    } else if (indexEnfocado === 0) {
-                        cerrarFiltro();
-                    }
-                } else if (e.key === 'Escape') {
-                    cerrarFiltro();
-                }
-            });
-
-            // Cerrar filtro al hacer click fuera
-            document.addEventListener('click', (e) => {
-                if (!document.getElementById('filtroDropdownContainer').contains(e.target)) {
-                    cerrarFiltro();
-                }
-            });
-
-            /* === LÓGICA DEL SIDEBAR === */
-            // (Se mantiene el script de sidebar y overlay del paso anterior para funcionamiento general)
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('sidebarOverlay');
-            const toggleMobile = document.getElementById('menuToggleMobile');
             
-            const btnMenuPrincipal = document.getElementById('btnMenuPrincipal');
-            const contenedorListas = document.getElementById('contenedorListas');
-            const iconoDesplegable = document.getElementById('iconoDesplegable');
-
-            btnMenuPrincipal.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if(contenedorListas.classList.contains('hidden')) {
-                    contenedorListas.classList.remove('hidden');
-                    contenedorListas.classList.add('flex');
-                    iconoDesplegable.classList.add('rotar-180');
-                } else {
-                    contenedorListas.classList.add('hidden');
-                    contenedorListas.classList.remove('flex');
-                    iconoDesplegable.classList.remove('rotar-180');
+            opcion.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    const valorOrden = opcion.dataset.orden || opcion.textContent.trim();
+                    filtroSeleccionado.textContent = valorOrden;
+                    if (inputOrdenHidden && formFiltrosCliente) {
+                        inputOrdenHidden.value = valorOrden;
+                        formFiltrosCliente.submit();
+                    }
+                    cerrarFiltro();
                 }
-            });
-
-            toggleMobile.addEventListener('click', () => {
-                sidebar.classList.toggle('-translate-x-full');
-                overlay.classList.toggle('hidden');
-            });
-            document.getElementById('closeSidebar').addEventListener('click', () => {
-                sidebar.classList.add('-translate-x-full');
-                overlay.classList.remove('hidden');
-            });
-            overlay.addEventListener('click', () => {
-                sidebar.classList.add('-translate-x-full');
-                overlay.classList.add('hidden');
             });
         });
-    </script>
-</body>
-</html>
+
+        btnFiltro.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (listaFiltros.classList.contains('hidden')) abrirFiltro();
+                indexEnfocado = 0;
+                opciones[indexEnfocado].focus();
+            }
+        });
+
+        listaFiltros.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (indexEnfocado < opciones.length - 1) {
+                    indexEnfocado++;
+                    opciones[indexEnfocado].focus();
+                }
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (indexEnfocado > 0) {
+                    indexEnfocado--;
+                    opciones[indexEnfocado].focus();
+                } else if (indexEnfocado === 0) {
+                    cerrarFiltro();
+                    btnFiltro.focus();
+                }
+            } else if (e.key === 'Escape') {
+                cerrarFiltro();
+                btnFiltro.focus();
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!document.getElementById('filtroDropdownContainer').contains(e.target)) {
+                cerrarFiltro();
+            }
+        });
+    });
+</script>
+{% endblock %}

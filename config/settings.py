@@ -14,7 +14,9 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'una-clave-insegura-por-defecto-para-desarr
 # Reemplazar DEBUG por la variable de entorno:
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    h.strip() for h in os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost,testserver').split(',') if h.strip()
+]
 
 # Application definition
 INSTALLED_APPS = [

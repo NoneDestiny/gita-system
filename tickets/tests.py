@@ -186,6 +186,33 @@ class ClienteTicketMVTTestCase(TestCase):
         notificar_ticket_segundo_plano(ticket, 'RESOLUCION', mensaje_extra="Reemplazado", async_mode=False)
         self.assertTrue(Notificacion.objects.filter(ticket=ticket, tipo_evento='RESOLUCION').exists())
 
+    def test_detalle_ticket_propio_y_bloqueo_ajeno(self):
+        ticket_propio = Ticket.objects.create(
+            asunto='Teclado dañado',
+            descripcion='Falla tecla Enter',
+            usuario=self.cliente,
+            equipo=self.equipo,
+            categoria=self.categoria_hard,
+            prioridad=self.prioridad_media,
+            estado=self.estado_creado,
+        )
+        ticket_ajeno = Ticket.objects.create(
+            asunto='Mouse ajeno',
+            descripcion='No mueve',
+            usuario=self.otro_cliente,
+            equipo=self.equipo,
+            categoria=self.categoria_hard,
+            prioridad=self.prioridad_media,
+            estado=self.estado_creado,
+        )
+
+        resp_ok = self.client.get(reverse('detalle_ticket', kwargs={'ticket_id': ticket_propio.id}))
+        self.assertEqual(resp_ok.status_code, 200)
+        self.assertContains(resp_ok, ticket_propio.folio)
+
+        resp_forbidden = self.client.get(reverse('detalle_ticket', kwargs={'ticket_id': ticket_ajeno.id}))
+        self.assertEqual(resp_forbidden.status_code, 403)
+
 
 class TecnicoGestionTicketTestCase(TestCase):
     """
