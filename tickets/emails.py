@@ -19,7 +19,7 @@ def _enviar_correo_tarea(ticket, tipo_evento, email_destinatario, usuario, asunt
     cuerpo_html = render_to_string('emails/notificacion_ticket.html', contexto)
     cuerpo_texto = strip_tags(cuerpo_html)
 
-    remitente = getattr(settings, 'DEFAULT_FROM_EMAIL', 'GITA System <soporte.gita.system@gmail.com>')
+    remitente = getattr(settings, 'DEFAULT_FROM_EMAIL', 'GITA System <manuelp67werewolf@gmail.com>')
     exitoso = True
     error_log = None
 

@@ -21,6 +21,15 @@ ALLOWED_HOSTS = [
     h.strip() for h in os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost,testserver').split(',') if h.strip()
 ]
 
+RENDER_EXTERNAL_HOSTNAME = os.getenv('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+
+    # Permitir el dominio de Render para que no te bloquee los POST (CSRF)
+CSRF_TRUSTED_ORIGINS = ['https://*.onrender.com']
+if RENDER_EXTERNAL_HOSTNAME:
+    CSRF_TRUSTED_ORIGINS.append(f"https://{RENDER_EXTERNAL_HOSTNAME}")
+
 # Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -107,10 +116,7 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles') # Render necesita esto para collectstatic
 
-# Permitir el dominio de Render para que no te bloquee los POST (CSRF)
-CSRF_TRUSTED_ORIGINS = [
-    'https://*.onrender.com',
-]
+
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -139,7 +145,7 @@ EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'GITA System <soporte.gita.system@gmail.com>')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'GITA System <manuelp67werewolf@gmail.com>')
 
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 
