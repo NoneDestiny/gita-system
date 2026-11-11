@@ -3,6 +3,7 @@ from django.urls import path
 from django.views.generic import RedirectView
 from django.conf import settings
 from django.conf.urls.static import static
+from tickets.views import api_triaje_gemini_view
 
 from users.views import (
     CustomLoginView,
@@ -68,8 +69,7 @@ urlpatterns = [
 
     # Panel de Administración de Django
     path('admin/', admin.site.urls),
-
-    path('api/triaje-gemini/', views.api_triaje_gemini_view, name='api_triaje_gemini'),
+    path('api/triaje-gemini/', api_triaje_gemini_view, name='api_triaje_gemini'),
 ]
 
 if settings.DEBUG:
