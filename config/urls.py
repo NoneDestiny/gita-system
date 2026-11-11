@@ -68,6 +68,8 @@ urlpatterns = [
 
     # Panel de Administración de Django
     path('admin/', admin.site.urls),
+
+    path('api/triaje-gemini/', views.api_triaje_gemini_view, name='api_triaje_gemini'),
 ]
 
 if settings.DEBUG:

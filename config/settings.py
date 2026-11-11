@@ -1,9 +1,12 @@
 import os
+import dj_database_url
 from pathlib import Path
 from dotenv import load_dotenv
 
 # Cargar las variables del archivo .env
 load_dotenv()
+
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -26,11 +29,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'cloudinary_storage',
+    'cloudinary',
     'users',
     'catalogos',
     'tickets',
     'equipos',
     'inventario',
+
 ]
 
 MIDDLEWARE = [
@@ -63,12 +69,14 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 # Database
+# Database Configuration (Supabase / Render)
 if os.getenv('DB_ENGINE', '').lower() == 'sqlite':
     DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
+        'default': dj_database_url.config(
+            # Si no hay variable en la nube, usa sqlite3 para tu entorno local por defecto
+            default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+            conn_max_age=0 # OBLIGATORIO para Supabase Transaction Pooler (evita que se caiga)
+        )
     }
 else:
     DATABASES = {
@@ -106,6 +114,12 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles') # Render necesita esto para collectstatic
+
+# Permitir el dominio de Render para que no te bloquee los POST (CSRF)
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.onrender.com',
+]
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -135,3 +149,25 @@ EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'GITA System <soporte.gita.system@gmail.com>')
+
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+
+# ==============================================================================
+# CONFIGURACIÓN DE CLOUDINARY (EVIDENCIAS MULTIMEDIA)
+# ==============================================================================
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': os.getenv('CLOUDINARY_API_KEY'),
+    'API_SECRET': os.getenv('CLOUDINARY_API_SECRET'),
+}
+
+# Configuración moderna de Django 4.2+ para usar Cloudinary como almacenamiento por defecto
+STORAGES = {
+    "default": {
+        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
+

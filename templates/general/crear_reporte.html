@@ -421,7 +421,8 @@
             if (modalIAAsunto) modalIAAsunto.textContent = pred.asuntoSugerido;
             if (modalIACategoria) modalIACategoria.textContent = pred.categoria;
             if (modalIASintesis) {
-                modalIASintesis.innerHTML = `<strong>Síntesis IA:</strong> Basado en los síntomas descritos, se recomienda clasificar el reporte en <strong>${pred.categoria}</strong>.`;
+                // Aquí usamos la síntesis real
+                modalIASintesis.innerHTML = `<strong>Síntesis IA:</strong> ${pred.sintesis}`; 
             }
             modalAsistenteIA.classList.remove('hidden');
             modalAsistenteIA.classList.add('flex');
@@ -478,17 +479,35 @@
             });
         }
 
-        btnGenerarIA.addEventListener('click', () => {
+                btnGenerarIA.addEventListener('click', async () => {
             const textoBase = inputDescripcion.value.trim();
-            const pred = detectarPrediccion(textoBase);
+            if (textoBase.length < 10) {
+                alert("Por favor, escribe una descripción más detallada (mínimo 10 letras).");
+                return;
+            }
 
             btnGenerarIA.disabled = true;
             btnGenerarIA.classList.add('opacity-75', 'cursor-not-allowed');
-            textoBtnIA.textContent = 'Analizando...';
+            textoBtnIA.textContent = 'Analizando con Gemini...';
             spinnerIA.classList.remove('hidden');
             resultadoIA.classList.add('opacity-50');
             
-            setTimeout(() => {
+            try {
+                // Capturamos el token de seguridad de Django
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+                // Llamada asíncrona a nuestra vista api_triaje_gemini_view
+                const response = await fetch('/api/triaje-gemini/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({ descripcion: textoBase })
+                });
+
+                const data = await response.json();
+
                 btnGenerarIA.disabled = false;
                 btnGenerarIA.classList.remove('opacity-75', 'cursor-not-allowed');
                 textoBtnIA.textContent = 'Actualizar IA';
@@ -497,19 +516,34 @@
                 resultadoIA.classList.remove('opacity-50', 'text-gray-600', 'italic', 'text-center', 'mt-6');
                 resultadoIA.classList.add('text-gray-900', 'text-left');
                 resultadoIA.innerHTML = `
-                    <p class="animate-fade-in"><span class="font-bold text-gray-700">Asunto sugerido:</span> ${pred.asuntoSugerido}</p>
-                    <p class="animate-fade-in" style="animation-delay: 100ms;"><span class="font-bold text-gray-700">Categoría Detectada:</span> ${pred.categoria}</p>
+                    <p class="animate-fade-in"><span class="font-bold text-gray-700">Asunto sugerido:</span> ${data.asunto}</p>
+                    <p class="animate-fade-in" style="animation-delay: 100ms;"><span class="font-bold text-gray-700">Categoría Detectada:</span> ${data.categoria}</p>
                     <p class="animate-fade-in text-sm text-gray-700 mt-2 border-t border-gray-400 pt-2" style="animation-delay: 200ms;">
-                        <strong>Síntesis IA:</strong> Basado en los síntomas descritos, se clasifica preventivamente en el área de <strong>${pred.categoria}</strong> para asignación prioritaria a soporte técnico.
+                        <strong>Síntesis IA:</strong> ${data.sintesis}
                     </p>
                 `;
+
+                // Autocompletar los campos del formulario
                 if (!inputAsunto.value.trim()) {
-                    inputAsunto.value = pred.asuntoSugerido.slice(0, 20);
+                    inputAsunto.value = data.asunto.slice(0, 20);
                     validarAsuntoEnTiempoReal(false);
                 }
-                aplicarSugerenciaCategoria(pred.categoria);
-                abrirModalIA(pred);
-            }, 400);
+                aplicarSugerenciaCategoria(data.categoria);
+
+                // Abrir el modal pasando la respuesta de Gemini
+                abrirModalIA({
+                    asuntoSugerido: data.asunto,
+                    categoria: data.categoria,
+                    sintesis: data.sintesis
+                });
+
+            } catch (error) {
+                console.error(error);
+                btnGenerarIA.disabled = false;
+                textoBtnIA.textContent = 'Reintentar IA';
+                spinnerIA.classList.add('hidden');
+                resultadoIA.innerHTML = `<p class="text-red-600 font-bold text-sm">No se pudo conectar con el asistente. Llena los campos manualmente.</p>`;
+            }
         });
 
         /* === ATAJOS DE TECLADO EN FORMULARIO DE REPORTE (Alt+I: IA, Ctrl+Enter: Enviar) === */

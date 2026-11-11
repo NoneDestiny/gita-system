@@ -8,10 +8,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}GITA - Gestor de Incidencias TI{% endblock %}</title>
 
-    <!-- ======================================================================= -->
-    <!-- SCRIPT BLOQUEANTE PRE-RENDER (0ms FOUC): Sincronización localStorage +   -->
-    <!-- CustomUser.modo_oscuro sin parpadeos visuales al cambiar de página       -->
-    <!-- ======================================================================= -->
     <script>
         (function() {
             try {
@@ -35,18 +31,17 @@
         })();
     </script>
 
-    <!-- Tailwind CSS con Configuración de Breakpoints Obligatorios Mobile-First -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
                 screens: {
-                    'xs': '375px',   /* Punto de interrupción 1: Vista Móvil (375px) */
+                    'xs': '375px',
                     'sm': '640px',
-                    'md': '768px',   /* Punto de interrupción 2: Vista Tableta (768px - 2 columnas) */
+                    'md': '768px',
                     'lg': '1024px',
-                    'xl': '1280px',  /* Punto de interrupción 3: Vista Escritorio (1280px+) */
+                    'xl': '1280px',
                     '2xl': '1536px',
                 },
                 extend: {
@@ -68,7 +63,6 @@
         }
     </script>
 
-    <!-- Estilos Base Semánticos, WCAG 2.1 Nivel AA (Contraste >= 4.5:1, Zoom 200%, Touch Target >= 44x44px) -->
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap');
 
@@ -81,7 +75,7 @@
             --gita-text-muted: #d1d5db;
             --gita-accent: #d47c35;
             --gita-contrast-ratio-min: 4.5;
-            font-size: 16px; /* Tamaño base mínimo obligatorio de 16px */
+            font-size: 16px;
         }
 
         html.light {
@@ -104,9 +98,6 @@
             color: var(--gita-text);
         }
 
-        /* =================================================================== */
-        /* TEMA CLARO (WCAG 2.1 AA - Ratio de Contraste >= 4.5:1 garantizado)  */
-        /* =================================================================== */
         html.light body,
         html.light #sidebar {
             background-color: #f1f5f9 !important;
@@ -137,107 +128,43 @@
         }
         html.light .text-white,
         html.light .text-gray-200,
-        html.light .text-gray-300 {
-            color: #0f172a !important; /* Contraste > 12:1 sobre fondos claros */
-        }
-        html.light .text-gray-400 {
-            color: #334155 !important; /* Contraste > 7:1 sobre fondos claros */
-        }
-        html.light .bg-red-800,
-        html.light .bg-emerald-600,
-        html.light .bg-amber-700,
-        html.light .bg-gray-500 {
-            color: #ffffff !important;
-        }
+        html.light .text-gray-300 { color: #0f172a !important; }
+        html.light .text-gray-400 { color: #334155 !important; }
+        html.light .bg-red-800, html.light .bg-emerald-600,
+        html.light .bg-amber-700, html.light .bg-gray-500 { color: #ffffff !important; }
 
-        /* Accesibilidad ISO 9241-11 & WCAG 2.1 AA: Indicador de foco activo (focus-ring) en TODOS los botones, insumos de texto y enlaces */
-        a:focus,
-        a:focus-visible,
-        button:focus,
-        button:focus-visible,
-        input:focus,
-        input:focus-visible,
-        textarea:focus,
-        textarea:focus-visible,
-        select:focus,
-        select:focus-visible,
-        [role="button"]:focus,
-        [role="button"]:focus-visible,
-        [role="option"]:focus,
-        [role="option"]:focus-visible,
-        [tabindex]:focus-visible {
+        a:focus, a:focus-visible, button:focus, button:focus-visible,
+        input:focus, input:focus-visible, textarea:focus, textarea:focus-visible,
+        select:focus, select:focus-visible, [role="button"]:focus,
+        [role="button"]:focus-visible, [tabindex]:focus-visible {
             outline: 3px solid #D97706 !important;
             outline-offset: 2px !important;
             box-shadow: 0 0 0 4px rgba(217, 119, 6, 0.35) !important;
         }
 
-        /* Enlace de salto directo al contenido principal (Skip-to-content) para navegación rápida por teclado */
         .skip-to-content-link {
-            position: fixed;
-            top: -100px;
-            left: 1rem;
-            z-index: 9999;
-            background-color: #d47c35;
-            color: #111827;
-            font-weight: 700;
-            padding: 0.75rem 1.25rem;
-            border-radius: 0.5rem;
-            transition: top 0.2s ease-in-out;
+            position: fixed; top: -100px; left: 1rem; z-index: 9999;
+            background-color: #d47c35; color: #111827; font-weight: 700;
+            padding: 0.75rem 1.25rem; border-radius: 0.5rem; transition: top 0.2s ease-in-out;
         }
-        .skip-to-content-link:focus {
-            top: 1rem;
+        .skip-to-content-link:focus { top: 1rem; }
+
+        button, a[href], select, input[type="button"], input[type="submit"], input[type="reset"], [role="button"] {
+            min-height: 44px; min-width: 44px;
         }
 
-        /* Ergonomía Táctil (WCAG 2.1 / Mobile-First): Área de toque mínima de 44x44 píxeles */
-        button,
-        a[href],
-        select,
-        input[type="button"],
-        input[type="submit"],
-        input[type="reset"],
-        [role="button"],
-        [role="option"] {
-            min-height: 44px;
-            min-width: 44px;
-        }
+        main, section, article, form, div { word-wrap: break-word; overflow-wrap: anywhere; }
+        #sidebar { transition: transform 0.3s ease-in-out; }
+        .rotar-180 { transform: rotate(180deg); }
 
-        /* Soporte de Zoom de Texto hasta 200% sin solapar contenidos ni perder funcionalidad */
-        main, section, article, form, div {
-            word-wrap: break-word;
-            overflow-wrap: anywhere;
-        }
-
-        #sidebar {
-            transition: transform 0.3s ease-in-out;
-        }
-
-        .rotar-180 {
-            transform: rotate(180deg);
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-5px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in {
-            animation: fadeIn 0.2s ease-out forwards;
-        }
-
-        @keyframes fadeDown {
-            from { opacity: 0; transform: translateY(-5px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-down {
-            animation: fadeDown 0.2s ease-out forwards;
-        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.2s ease-out forwards; }
+        @keyframes fadeDown { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-down { animation: fadeDown 0.2s ease-out forwards; }
 
         textarea::-webkit-scrollbar { width: 8px; }
         textarea::-webkit-scrollbar-thumb { background-color: #a3a3a3; border-radius: 4px; }
-
-        input[type="number"]::-webkit-inner-spin-button, 
-        input[type="number"]::-webkit-outer-spin-button { 
-            -webkit-appearance: none; margin: 0; 
-        }
+        input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         input[type="number"] { -moz-appearance: textfield; }
     </style>
 
@@ -245,126 +172,77 @@
 </head>
 <body class="bg-[#303338] text-gray-200 min-h-screen w-full max-w-full flex flex-col md:flex-row overflow-x-hidden relative text-base">
 
-    <!-- Enlace de Salto Rápido (Skip Link) para Navegación 100% por Teclado (ISO 9241-11) -->
-    <a href="#mainContent" id="skipToContent" class="skip-to-content-link" aria-label="Saltar directamente al contenido principal">
-        Saltar al contenido principal (Tab)
-    </a>
+    <a href="#mainContent" id="skipToContent" class="skip-to-content-link" aria-label="Saltar al contenido principal">Saltar al contenido principal (Tab)</a>
 
-    <!-- ======================================================================= -->
-    <!-- 1. CABECERA MÓVIL (375px - < 768px): Disposición vertical 1 columna     -->
-    <!-- ======================================================================= -->
+    <!-- CABECERA MÓVIL -->
     <header class="md:hidden flex items-center justify-between bg-[#2a2d31] p-4 shadow-md z-40 relative shrink-0 gap-2">
-        <button id="menuToggleMobile" type="button" class="text-white p-2 min-h-[44px] min-w-[44px] inline-flex items-center justify-center focus-visible:ring-2 focus-visible:ring-orange-500 rounded" aria-expanded="false" aria-controls="sidebar" aria-label="Abrir menú de navegación">
+        <button id="menuToggleMobile" type="button" class="text-white p-2 min-h-[44px] min-w-[44px] inline-flex items-center justify-center focus-visible:ring-2 focus-visible:ring-orange-500 rounded" aria-expanded="false" aria-controls="sidebar">
             <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
         </button>
         <h1 class="text-xl font-bold tracking-wide truncate">GITA System</h1>
         <div class="flex items-center gap-2">
-            <!-- Toggle de Tema Móvil (Touch target >= 44x44px) -->
-            <button id="themeToggleMobile" type="button" data-theme-toggle
-                    class="min-h-[44px] min-w-[44px] px-3 py-2 rounded-full bg-[#404348] text-white border border-gray-500 inline-flex items-center justify-center hover:bg-gray-600 transition-colors shadow"
-                    aria-label="Cambiar entre tema oscuro y tema claro"
-                    aria-pressed="{% if request.user.is_authenticated and not request.user.modo_oscuro %}false{% else %}true{% endif %}"
-                    title="Alternar tema Oscuro / Claro">
+            <button id="themeToggleMobile" type="button" data-theme-toggle class="min-h-[44px] min-w-[44px] px-3 py-2 rounded-full bg-[#404348] text-white border border-gray-500 inline-flex items-center justify-center shadow">
                 <span class="theme-icon-label text-base font-bold" aria-hidden="true">🌙</span>
             </button>
-            <a href="{% url 'datos_usuario' %}" class="min-h-[44px] min-w-[44px] w-11 h-11 bg-gray-600 text-white rounded-full inline-flex items-center justify-center hover:bg-gray-500 transition-colors" aria-label="Mi perfil" title="{{ request.user.username }}">👤</a>
+            <a href="{% url 'datos_usuario' %}" class="w-11 h-11 bg-gray-600 text-white rounded-full inline-flex items-center justify-center">👤</a>
         </div>
     </header>
 
-    <!-- ======================================================================= -->
-    <!-- 2. SIDEBAR / NAVEGACIÓN SEMÁNTICA (Colapsable en 375px, 2da Col en 768px) -->
-    <!-- ======================================================================= -->
-    <aside id="sidebar" aria-label="Barra lateral de navegación" class="fixed md:relative inset-y-0 left-0 z-50 w-64 xl:w-72 min-h-screen bg-[#303338] border-r border-gray-600 flex flex-col transform -translate-x-full md:translate-x-0 shrink-0">
-        <!-- Botón de cierre exclusivo para vista móvil -->
-        <div class="md:hidden p-4 flex justify-between items-center border-b border-gray-600">
-            <span class="font-bold text-white text-base tracking-wider uppercase">Navegación</span>
-            <button id="closeSidebar" type="button" class="text-gray-300 hover:text-white p-2 min-h-[44px] min-w-[44px] inline-flex items-center justify-center" aria-label="Cerrar menú">
+    <!-- SIDEBAR / MENÚ LATERAL -->
+    <aside id="sidebar" class="absolute md:relative z-50 w-64 md:w-72 h-full bg-[#303338] border-r border-gray-600 flex flex-col transform -translate-x-full md:translate-x-0 transition-transform duration-300">
+        <div class="md:hidden p-4 flex justify-end border-b border-gray-600">
+            <button id="closeSidebar" class="text-gray-400 hover:text-white p-2 min-h-[44px] min-w-[44px]">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
         </div>
 
-        <nav aria-label="Menú principal del sistema" class="flex-1 p-5 xl:p-6 overflow-y-auto">
+        <nav class="flex-1 p-6 overflow-y-auto">
             <div class="relative w-full" id="wrapperDesplegable">
-                <button id="btnMenuPrincipal" type="button" aria-expanded="false" aria-controls="contenedorListas" aria-label="Abrir o cerrar menú principal de módulos (Atajo: Alt + M)" title="Menú Principal (Alt + M)" class="w-full flex items-center justify-between bg-[#d9d9d9] text-gray-900 font-bold px-4 py-3 rounded min-h-[44px] min-w-[44px] hover:bg-gray-300 transition-colors focus:ring-2 focus:ring-orange-500 shadow-md">
+                <button id="btnMenuPrincipal" aria-expanded="false" aria-controls="contenedorListas" class="w-full flex items-center justify-between bg-[#d9d9d9] text-gray-900 font-bold px-4 py-3 rounded min-h-[44px] hover:bg-gray-300 transition-colors shadow-md">
                     <div class="flex items-center gap-2">
-                        <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-                        <span>Menú Principal</span>
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                        Menú Principal
                     </div>
-                    <svg id="iconoDesplegable" class="w-5 h-5 transition-transform duration-200 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    <svg id="iconoDesplegable" class="w-5 h-5 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                 </button>
 
-                <!-- Bloque de Menú Dinámico por Rol (RBAC) -->
-                <div id="contenedorListas" class="hidden mt-2 w-full z-50 bg-[#404348] border border-gray-600 rounded-md shadow-2xl p-3 flex-col gap-3 animate-fade-in">
-                    {% block sidebar_menu %}
-                    <div class="menu-group flex flex-col gap-2">
-                        {% if request.user.rol == 'TECNICO' %}
-                            <a href="{% url 'tecnico_tickets_asignados' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm {% if modulo == 'tickets_asignados' or modulo == 'solucion_caso' %}border-2 border-orange-500{% endif %}" {% if modulo == 'tickets_asignados' %}aria-current="page"{% endif %}>
-                                Tickets asignados{% if modulo == 'tickets_asignados' %} (Activo){% endif %}
-                            </a>
-                            <a href="{% url 'crear_reporte' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm {% if modulo == 'crear_reporte' %}border-2 border-orange-500{% endif %}" {% if modulo == 'crear_reporte' %}aria-current="page"{% endif %}>
-                                Nuevo Reporte{% if modulo == 'crear_reporte' %} (Activo){% endif %}
-                            </a>
-                            <a href="{% url 'tecnico_historial' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm {% if modulo == 'historial_tecnico' %}border-2 border-orange-500{% endif %}" {% if modulo == 'historial_tecnico' %}aria-current="page"{% endif %}>
-                                Histórico{% if modulo == 'historial_tecnico' %} (Activo){% endif %}
-                            </a>
-                            <a href="{% url 'datos_usuario' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm {% if modulo == 'perfil' %}border-2 border-orange-500{% endif %}" {% if modulo == 'perfil' %}aria-current="page"{% endif %}>
-                                Mis datos{% if modulo == 'perfil' %} (Activo){% endif %}
-                            </a>
-                            <a href="{% url 'mis_equipos' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm {% if modulo == 'equipos' %}border-2 border-orange-500{% endif %}" {% if modulo == 'equipos' %}aria-current="page"{% endif %}>
-                                Mis Equipos{% if modulo == 'equipos' %} (Activo){% endif %}
-                            </a>
-                        {% elif request.user.rol == 'GERENTE' %}
-                            <a href="{% url 'gerente_dashboard' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm {% if modulo == 'dashboard' %}border-2 border-orange-500{% endif %}" {% if modulo == 'dashboard' %}aria-current="page"{% endif %}>
-                                Dashboard{% if modulo == 'dashboard' %} (Activo){% endif %}
-                            </a>
-                            <a href="{% url 'gerente_gestion_tecnicos' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm {% if modulo == 'gestion_tecnicos' %}border-2 border-orange-500{% endif %}" {% if modulo == 'gestion_tecnicos' %}aria-current="page"{% endif %}>
-                                Gestor de técnicos{% if modulo == 'gestion_tecnicos' %} (Activo){% endif %}
-                            </a>
-                            <a href="{% url 'crear_reporte' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm {% if modulo == 'crear_reporte' %}border-2 border-orange-500{% endif %}" {% if modulo == 'crear_reporte' %}aria-current="page"{% endif %}>
-                                Nuevo Reporte{% if modulo == 'crear_reporte' %} (Activo){% endif %}
-                            </a>
-                            <a href="{% url 'gerente_inventario' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm {% if modulo == 'inventario' %}border-2 border-orange-500{% endif %}" {% if modulo == 'inventario' %}aria-current="page"{% endif %}>
-                                Inventario{% if modulo == 'inventario' %} (Activo){% endif %}
-                            </a>
-                            <a href="{% url 'datos_usuario' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm {% if modulo == 'perfil' %}border-2 border-orange-500{% endif %}" {% if modulo == 'perfil' %}aria-current="page"{% endif %}>
-                                Mis datos{% if modulo == 'perfil' %} (Activo){% endif %}
-                            </a>
-                            <a href="{% url 'mis_equipos' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm {% if modulo == 'equipos' %}border-2 border-orange-500{% endif %}" {% if modulo == 'equipos' %}aria-current="page"{% endif %}>
-                                Mis Equipos{% if modulo == 'equipos' %} (Activo){% endif %}
-                            </a>
-                        {% else %}
-                            <a href="{% url 'crear_reporte' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm {% if modulo == 'crear_reporte' %}border-2 border-orange-500{% endif %}" {% if modulo == 'crear_reporte' %}aria-current="page"{% endif %}>
-                                Nuevo reporte{% if modulo == 'crear_reporte' %} (Activo){% endif %}
-                            </a>
-                            <a href="{% url 'datos_usuario' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm {% if modulo == 'perfil' %}border-2 border-orange-500{% endif %}" {% if modulo == 'perfil' %}aria-current="page"{% endif %}>
-                                Mis datos{% if modulo == 'perfil' %} (Activo){% endif %}
-                            </a>
-                            <a href="{% url 'cliente_historico' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm {% if modulo == 'historico' or modulo == 'detalle_ticket' %}border-2 border-orange-500{% endif %}" {% if modulo == 'historico' %}aria-current="page"{% endif %}>
-                                Histórico{% if modulo == 'historico' or modulo == 'detalle_ticket' %} (Activo){% endif %}
-                            </a>
-                            <a href="{% url 'mis_equipos' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm {% if modulo == 'equipos' %}border-2 border-orange-500{% endif %}" {% if modulo == 'equipos' %}aria-current="page"{% endif %}>
-                                Mis Equipos{% if modulo == 'equipos' %} (Activo){% endif %}
-                            </a>
-                        {% endif %}
-                        <a href="{% url 'logout' %}" class="bg-red-800 text-white font-semibold px-4 py-2 rounded text-center min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-red-700 transition-colors shadow-sm mt-2">
-                            Cerrar Sesión
-                        </a>
-                    </div>
-                    {% endblock %}
+                <!-- CONTENEDOR DE LISTAS (SIN ETIQUETAS BLOCK PARA BLOQUEAR SOBREESCRITURAS) -->
+            <div id="contenedorListas" class="hidden mt-2 w-full z-50 bg-[#404348] border border-gray-600 rounded-md shadow-2xl p-3 flex-col gap-3 animate-fade-in">
+                <div class="menu-group flex flex-col gap-2">
+    
+                    {% if usuario.rol|lower == 'tecnico' or request.user.rol|lower == 'tecnico' %}
+                        <a href="{% url 'tecnico_tickets_asignados' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm {% if modulo == 'tickets_asignados' %}border-2 border-orange-500{% endif %}">Tickets asignados</a>
+                        <a href="{% url 'crear_reporte' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm {% if modulo == 'crear_reporte' %}border-2 border-orange-500{% endif %}">Nuevo Reporte</a>
+                        <a href="{% url 'tecnico_historial' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm {% if modulo == 'historial_tecnico' %}border-2 border-orange-500{% endif %}">Histórico</a>
+                        <a href="{% url 'datos_usuario' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm {% if modulo == 'perfil' %}border-2 border-orange-500{% endif %}">Mis datos</a>
+                        <a href="{% url 'mis_equipos' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm {% if modulo == 'equipos' %}border-2 border-orange-500{% endif %}">Mis Equipos</a>
+                        
+                    {% elif usuario.rol|lower == 'gerente' or request.user.rol|lower == 'gerente' %}
+                        <a href="{% url 'gerente_dashboard' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm {% if modulo == 'dashboard' %}border-2 border-orange-500{% endif %}">Dashboard</a>
+                        <a href="{% url 'gerente_gestion_tecnicos' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm {% if modulo == 'gestion_tecnicos' %}border-2 border-orange-500{% endif %}">Gestor de técnicos</a>
+                        <a href="{% url 'crear_reporte' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm {% if modulo == 'crear_reporte' %}border-2 border-orange-500{% endif %}">Nuevo Reporte</a>
+                        <a href="{% url 'gerente_inventario' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm {% if modulo == 'inventario' %}border-2 border-orange-500{% endif %}">Inventario</a>
+                        <a href="{% url 'datos_usuario' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm {% if modulo == 'perfil' %}border-2 border-orange-500{% endif %}">Mis datos</a>
+                        <a href="{% url 'mis_equipos' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm {% if modulo == 'equipos' %}border-2 border-orange-500{% endif %}">Mis Equipos</a>
+                        
+                    {% else %}
+                        <a href="{% url 'crear_reporte' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm {% if modulo == 'crear_reporte' %}border-2 border-orange-500{% endif %}">Nuevo reporte</a>
+                        <a href="{% url 'datos_usuario' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm {% if modulo == 'perfil' %}border-2 border-orange-500{% endif %}">Mis datos</a>
+                        <a href="{% url 'cliente_historico' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm {% if modulo == 'historico' %}border-2 border-orange-500{% endif %}">Histórico</a>
+                        <a href="{% url 'mis_equipos' %}" class="bg-[#b3b3b3] text-gray-900 font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-gray-300 transition-colors shadow-sm {% if modulo == 'equipos' %}border-2 border-orange-500{% endif %}">Mis Equipos</a>
+                    {% endif %}
+                    
+                    <a href="{% url 'logout' %}" class="bg-red-800 text-white font-semibold px-4 py-2 rounded text-center min-h-[44px] flex items-center justify-center hover:bg-red-700 transition-colors shadow-sm mt-2">Cerrar Sesión</a>
                 </div>
             </div>
         </nav>
     </aside>
 
-    <!-- Overlay oscuro para móvil al abrir menú lateral -->
     <div id="sidebarOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden md:hidden"></div>
 
-    <!-- ======================================================================= -->
-    <!-- 3. CONTENIDO PRINCIPAL SEMÁNTICO (Columna principal adaptable, Zoom 200%)-->
-    <!-- ======================================================================= -->
-    <main id="mainContent" tabindex="-1" aria-label="Contenido operativo principal" class="flex-1 flex flex-col min-h-screen min-w-0 w-full overflow-y-auto overflow-x-hidden relative pb-8">
+    <!-- CONTENIDO PRINCIPAL -->
+    <main id="mainContent" tabindex="-1" class="flex-1 flex flex-col min-h-screen min-w-0 w-full overflow-y-auto overflow-x-hidden relative pb-8">
         
-        <!-- Cabecera Tableta (768px) y Escritorio (1280px+) -->
         <header class="hidden md:grid grid-cols-1 lg:grid-cols-3 items-center gap-3 p-4 lg:p-6 bg-[#2a2d31]/40 border-b border-gray-700/50 shrink-0">
             <div class="flex items-center">
                 {% block header_left %}{% endblock %}
@@ -373,110 +251,45 @@
                 {% block header_title %}GITA - Gestor de Incidencias TI{% endblock %}
             </h1>
             <div class="flex flex-wrap justify-end items-center gap-2 lg:gap-3">
-                <!-- Toggle de Tema (Oscuro / Claro) sincronizado con CustomUser y localStorage (min 44x44px) -->
-                <button id="themeToggleBtn" type="button" data-theme-toggle
-                        class="min-h-[44px] min-w-[44px] px-4 py-2 rounded-full bg-[#404348] text-white border border-gray-500 inline-flex items-center justify-center gap-2 hover:bg-gray-600 transition-colors shadow-md font-semibold text-base"
-                        aria-label="Cambiar entre tema oscuro y tema claro"
-                        aria-pressed="{% if request.user.is_authenticated and not request.user.modo_oscuro %}false{% else %}true{% endif %}"
-                        title="Alternar tema Oscuro / Claro">
+                <button id="themeToggleBtn" type="button" data-theme-toggle class="min-h-[44px] min-w-[44px] px-4 py-2 rounded-full bg-[#404348] text-white border border-gray-500 inline-flex items-center justify-center gap-2 shadow-md">
                     <span class="theme-icon-label" aria-hidden="true">🌙</span>
                     <span id="themeTextLabel" class="theme-text-label">Oscuro</span>
                 </button>
 
-                <div class="flex flex-wrap items-center gap-2 lg:gap-3 bg-[#404348] px-3 lg:px-4 py-1.5 rounded-full shadow-md max-w-full">
-                    <div class="w-9 h-9 bg-gray-300 text-gray-900 rounded-full flex items-center justify-center font-bold shrink-0">👤</div>
+                <div class="flex flex-wrap items-center gap-2 lg:gap-3 bg-[#404348] px-3 lg:px-4 py-1.5 rounded-full shadow-md">
+                    <div class="w-9 h-9 bg-gray-300 text-gray-900 rounded-full flex items-center justify-center font-bold">👤</div>
                     <span id="userRoleDisplay" class="text-base font-medium break-words">
                         {% block header_user %}
                             {{ request.user.username }}{% if request.user.rol == 'TECNICO' %} (Técnico){% elif request.user.rol == 'GERENTE' %} (Gerente){% endif %}
                         {% endblock %}
                     </span>
-                    <a href="{% url 'logout' %}" class="min-h-[44px] min-w-[44px] px-3 py-2 inline-flex items-center justify-center rounded-md bg-red-800 text-white hover:bg-red-700 font-semibold text-base transition-colors shrink-0" title="Cerrar sesión">Salir</a>
+                    <a href="{% url 'logout' %}" class="px-3 py-2 rounded-md bg-red-800 text-white hover:bg-red-700 font-semibold transition-colors">Salir</a>
                 </div>
             </div>
         </header>
 
-        <!-- Contenedor de Vista Hija -->
         {% block content %}{% endblock %}
-
     </main>
 
-    <!-- Bloque para Modales / Overlays Globales o de Vista -->
     {% block modals %}{% endblock %}
 
-    <!-- Script Maestro de Navegación Mobile-First y Sincronización de Tema (localStorage + Backend CustomUser) -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const sidebar = document.getElementById('sidebar');
             const overlaySidebar = document.getElementById('sidebarOverlay');
             const toggleMobile = document.getElementById('menuToggleMobile');
             const closeBtn = document.getElementById('closeSidebar');
-            
             const btnMenuPrincipal = document.getElementById('btnMenuPrincipal');
             const contenedorListas = document.getElementById('contenedorListas');
             const iconoDesplegable = document.getElementById('iconoDesplegable');
             const wrapperDesplegable = document.getElementById('wrapperDesplegable');
-            let ultimoElementoEnfocado = null;
 
-            function obtenerItemsMenu() {
-                if (!contenedorListas) return [];
-                return Array.from(contenedorListas.querySelectorAll('a[href], button:not([disabled])'));
-            }
-
-            function abrirMenuPrincipal(enfocarPrimero = false) {
-                if (!contenedorListas || !btnMenuPrincipal) return;
+            function abrirMenuPrincipal() {
+                if (!contenedorListas) return;
                 contenedorListas.classList.remove('hidden');
                 contenedorListas.classList.add('flex');
                 if (iconoDesplegable) iconoDesplegable.classList.add('rotar-180');
-                btnMenuPrincipal.setAttribute('aria-expanded', 'true');
-                if (enfocarPrimero) {
-                    const items = obtenerItemsMenu();
-                    if (items.length > 0) items[0].focus();
-                }
-            }
-
-            if (btnMenuPrincipal && contenedorListas) {
-                btnMenuPrincipal.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    if (contenedorListas.classList.contains('hidden')) {
-                        abrirMenuPrincipal(false);
-                    } else {
-                        cerrarMenuPrincipal();
-                    }
-                });
-
-                // Navegación 100% por teclado en Menú Principal (Flechas Arriba/Abajo, Enter, Escape)
-                btnMenuPrincipal.addEventListener('keydown', (e) => {
-                    if (e.key === 'ArrowDown') {
-                        e.preventDefault();
-                        abrirMenuPrincipal(true);
-                    } else if (e.key === 'Escape') {
-                        cerrarMenuPrincipal();
-                        btnMenuPrincipal.focus();
-                    }
-                });
-
-                contenedorListas.addEventListener('keydown', (e) => {
-                    const items = obtenerItemsMenu();
-                    if (!items.length) return;
-                    const idx = items.indexOf(document.activeElement);
-                    if (e.key === 'ArrowDown') {
-                        e.preventDefault();
-                        const nextIdx = idx < items.length - 1 ? idx + 1 : 0;
-                        items[nextIdx].focus();
-                    } else if (e.key === 'ArrowUp') {
-                        e.preventDefault();
-                        if (idx > 0) {
-                            items[idx - 1].focus();
-                        } else {
-                            cerrarMenuPrincipal();
-                            btnMenuPrincipal.focus();
-                        }
-                    } else if (e.key === 'Escape') {
-                        e.preventDefault();
-                        cerrarMenuPrincipal();
-                        btnMenuPrincipal.focus();
-                    }
-                });
+                if (btnMenuPrincipal) btnMenuPrincipal.setAttribute('aria-expanded', 'true');
             }
 
             function cerrarMenuPrincipal() {
@@ -485,6 +298,13 @@
                 contenedorListas.classList.remove('flex');
                 if (iconoDesplegable) iconoDesplegable.classList.remove('rotar-180');
                 if (btnMenuPrincipal) btnMenuPrincipal.setAttribute('aria-expanded', 'false');
+            }
+
+            if (btnMenuPrincipal) {
+                btnMenuPrincipal.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    contenedorListas.classList.contains('hidden') ? abrirMenuPrincipal() : cerrarMenuPrincipal();
+                });
             }
 
             document.addEventListener('click', (e) => {
@@ -499,11 +319,9 @@
                 if (isOpen) {
                     sidebar.classList.add('-translate-x-full');
                     overlaySidebar.classList.add('hidden');
-                    if (toggleMobile) toggleMobile.setAttribute('aria-expanded', 'false');
                 } else {
                     sidebar.classList.remove('-translate-x-full');
                     overlaySidebar.classList.remove('hidden');
-                    if (toggleMobile) toggleMobile.setAttribute('aria-expanded', 'true');
                 }
             }
 
@@ -511,44 +329,18 @@
             if (closeBtn) closeBtn.addEventListener('click', toggleSidebar);
             if (overlaySidebar) overlaySidebar.addEventListener('click', toggleSidebar);
 
-            // ===================================================================
-            // CONTROLADOR DEL TEMA (OSCURO / CLARO) SINCRONIZADO CON BACKEND
-            // ===================================================================
+            // CONTROLADOR DEL TEMA
             const htmlEl = document.documentElement;
             const themeButtons = document.querySelectorAll('[data-theme-toggle]');
-
-            function getCookie(name) {
-                let cookieValue = null;
-                if (document.cookie && document.cookie !== '') {
-                    const cookies = document.cookie.split(';');
-                    for (let i = 0; i < cookies.length; i++) {
-                        const cookie = cookies[i].trim();
-                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                            break;
-                        }
-                    }
-                }
-                return cookieValue;
-            }
 
             function actualizarUIporTema(theme) {
                 const isDark = (theme === 'dark');
                 htmlEl.setAttribute('data-theme', theme);
                 htmlEl.setAttribute('data-user-theme', theme);
-                if (isDark) {
-                    htmlEl.classList.add('dark');
-                    htmlEl.classList.remove('light');
-                } else {
-                    htmlEl.classList.add('light');
-                    htmlEl.classList.remove('dark');
-                }
-                try {
-                    localStorage.setItem('gita_theme', theme);
-                } catch (e) {}
-
+                isDark ? htmlEl.classList.add('dark') : htmlEl.classList.add('light');
+                isDark ? htmlEl.classList.remove('light') : htmlEl.classList.remove('dark');
+                
                 themeButtons.forEach(btn => {
-                    btn.setAttribute('aria-pressed', isDark ? 'true' : 'false');
                     const iconSpan = btn.querySelector('.theme-icon-label');
                     const textSpan = btn.querySelector('.theme-text-label');
                     if (iconSpan) iconSpan.textContent = isDark ? '🌙' : '☀️';
@@ -556,93 +348,17 @@
                 });
             }
 
-            // Sincronizar UI inicial con el tema activo
             const currentTheme = htmlEl.classList.contains('light') ? 'light' : 'dark';
             actualizarUIporTema(currentTheme);
 
             themeButtons.forEach(btn => {
-                btn.addEventListener('click', async () => {
+                btn.addEventListener('click', () => {
                     const nextTheme = htmlEl.classList.contains('light') ? 'dark' : 'light';
-                    const modoOscuroBool = (nextTheme === 'dark');
                     actualizarUIporTema(nextTheme);
-
-                    // Sincronizar asíncronamente con el modelo CustomUser del backend
-                    try {
-                        await fetch('{% url "api_cambiar_tema" %}', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRFToken': getCookie('csrftoken') || '{{ csrf_token }}'
-                            },
-                            body: JSON.stringify({
-                                modo_oscuro: modoOscuroBool,
-                                tema: nextTheme
-                            })
-                        });
-                    } catch (err) {
-                        // Si ocurre un error de red, localStorage mantiene la preferencia local
-                    }
                 });
-            });
-
-            // ===================================================================
-            // ATAJOS DE TECLADO RÁPIDOS Y PREVENCIÓN GLOBAL DE TRAMPAS DE FOCO
-            // (Norma ISO 9241-11: Reducción de Carga Cognitiva)
-            // ===================================================================
-            document.addEventListener('keydown', (e) => {
-                // 1. Escape cierra cualquier ventana emergente, modal, asistente IA o menú desplegable
-                //    y restaura el foco al elemento disparador (Prevención de Trampas de Foco)
-                if (e.key === 'Escape') {
-                    // Cerrar menú principal si está abierto
-                    if (contenedorListas && !contenedorListas.classList.contains('hidden')) {
-                        cerrarMenuPrincipal();
-                        if (btnMenuPrincipal) btnMenuPrincipal.focus();
-                    }
-                    // Cerrar sidebar móvil si está abierto
-                    if (sidebar && !sidebar.classList.contains('-translate-x-full') && window.innerWidth < 768) {
-                        toggleSidebar();
-                        if (toggleMobile) toggleMobile.focus();
-                    }
-                    // Cerrar cualquier modal global o ventana emergente del Asistente de IA
-                    if (typeof window.cerrarModal === 'function') {
-                        window.cerrarModal();
-                    }
-                    if (typeof window.cerrarModalIA === 'function') {
-                        window.cerrarModalIA();
-                    }
-                    if (ultimoElementoEnfocado && typeof ultimoElementoEnfocado.focus === 'function') {
-                        ultimoElementoEnfocado.focus();
-                    }
-                }
-
-                // 2. Atajos rápidos con Alt (Alt+M: Menú, Alt+N: Nuevo Reporte, Alt+H: Histórico, Alt+B: Buscar, Alt+T: Tema)
-                if (e.altKey && !e.ctrlKey && !e.metaKey) {
-                    const key = e.key.toLowerCase();
-                    if (key === 'm' && btnMenuPrincipal) {
-                        e.preventDefault();
-                        abrirMenuPrincipal(true);
-                    } else if (key === 't' && themeButtons.length > 0) {
-                        e.preventDefault();
-                        themeButtons[0].click();
-                        themeButtons[0].focus();
-                    } else if (key === 'b') {
-                        const buscador = document.getElementById('inputBusqueda') || document.getElementById('filtroPredictivoSerial');
-                        if (buscador) {
-                            e.preventDefault();
-                            buscador.focus();
-                        }
-                    } else if (key === 'n') {
-                        e.preventDefault();
-                        window.location.href = "{% url 'crear_reporte' %}";
-                    } else if (key === 'h') {
-                        e.preventDefault();
-                        window.location.href = "{% if request.user.rol == 'TECNICO' %}{% url 'tecnico_tickets_asignados' %}{% elif request.user.rol == 'GERENTE' %}{% url 'gerente_dashboard' %}{% else %}{% url 'cliente_historico' %}{% endif %}";
-                    }
-                }
             });
         });
     </script>
-
     {% block extra_js %}{% endblock %}
 </body>
 </html>

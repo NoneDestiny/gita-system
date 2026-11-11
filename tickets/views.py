@@ -5,6 +5,16 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
+import json
+import logging
+import google.generativeai as genai
+from django.conf import settings
+from django.http import JsonResponse
+
+logger = logging.getLogger(__name__)
+
+if hasattr(settings, 'GEMINI_API_KEY') and settings.GEMINI_API_KEY:
+    genai.configure(api_key=settings.GEMINI_API_KEY)
 
 from users.permissions import cliente_required, tecnico_required, obtener_ruta_por_rol
 from catalogos.models import Categoria, EstadoTicket, Prioridad
@@ -571,3 +581,52 @@ def tecnico_historial_view(request):
         'modulo': 'historial_tecnico',
     }
     return render(request, 'tecnico/historial_tecnico.html', context)
+
+# ==============================================================================
+# ENDPOINT API PARA TRIAJE CON GEMINI (IA)
+# ==============================================================================
+@login_required
+def api_triaje_gemini_view(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    try:
+        data = json.loads(request.body)
+        descripcion = data.get('descripcion', '').strip()
+        
+        if len(descripcion) < 10:
+            return JsonResponse({'error': 'Descripción muy corta'}, status=400)
+
+        # Prompt estricto para forzar a Gemini a devolver un JSON limpio
+        prompt = f"""
+        Eres un asistente de mesa de ayuda (Helpdesk). Analiza la siguiente descripción de un problema técnico:
+        "{descripcion}"
+        
+        Devuelve ÚNICAMENTE un objeto JSON válido con esta estructura exacta, sin texto adicional, sin markdown, sin saludos:
+        {{
+            "asunto": "Resumen corto de máximo 20 caracteres",
+            "categoria": "Debe ser una de estas: Hardware, Software, Redes",
+            "sintesis": "Una breve explicación de por qué asignaste esa categoría (máx 2 líneas)"
+        }}
+        """
+
+        # Usamos el modelo flash (el más rápido y el que tiene Free Tier)
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        
+        # El timeout de 15 segundos evita que la página se quede colgada
+        response = model.generate_content(prompt, request_options={"timeout": 15.0})
+        
+        # Limpiamos las etiquetas markdown por si Gemini las incluye por error
+        texto_limpio = response.text.replace('```json', '').replace('```', '').strip()
+        resultado_json = json.loads(texto_limpio)
+        
+        return JsonResponse(resultado_json)
+
+    except Exception as e:
+        logger.error(f"Error con Gemini: {str(e)}")
+        # FALLBACK: Si Gemini se cae, no da error 500, devuelve esto:
+        return JsonResponse({
+            'asunto': 'Falla de equipo TI',
+            'categoria': 'Hardware',
+            'sintesis': 'El asistente de IA no está disponible en este momento. Se ha asignado una categoría por defecto para que puedas continuar con tu reporte.'
+        })
