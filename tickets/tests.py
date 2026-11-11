@@ -169,6 +169,44 @@ class ClienteTicketMVTTestCase(TestCase):
         self.assertIsNotNone(notif_db)
         self.assertTrue(notif_db.exitoso)
 
+    def test_maquetacion_cliente_predictiva_cards_e_independencia_color(self):
+        """
+        Verifica los 5 criterios de aceptación de maquetación para el Rol Cliente:
+        1. Formularios predictivos (datalist sugerenciasAsunto, filtroPredictivoSerial, reglasPredictivas).
+        2. Retroalimentación inmediata en tiempo real (feedbackAsunto, feedbackDescripcion, role="alert").
+        3. Carga de evidencias con indicación visual de 5MB y restricción JPG, PNG, JPEG.
+        4. Transformación móvil en lista de tarjetas verticales (<article> en xl:hidden grid-cols-1).
+        5. Independencia del color en estados (texto explícito + icono SVG + aria-label="Estado del ticket: ...").
+        """
+        # 1-3: Vista de creación de reporte
+        resp_crear = self.client.get(reverse('crear_reporte'))
+        self.assertEqual(resp_crear.status_code, 200)
+        self.assertContains(resp_crear, 'id="sugerenciasAsunto"')
+        self.assertContains(resp_crear, 'id="filtroPredictivoSerial"')
+        self.assertContains(resp_crear, 'reglasPredictivas')
+        self.assertContains(resp_crear, 'id="feedbackAsunto"')
+        self.assertContains(resp_crear, 'id="feedbackDescripcion"')
+        self.assertContains(resp_crear, 'Formatos: JPG, PNG, JPEG')
+        self.assertContains(resp_crear, 'Límite máximo: 5 MB')
+        self.assertContains(resp_crear, 'accept=".jpg,.jpeg,.png,image/jpeg,image/png"')
+
+        # 4-5: Vista de seguimiento histórico
+        Ticket.objects.create(
+            asunto='Falla de red',
+            descripcion='Sin conexión al servidor',
+            usuario=self.cliente,
+            equipo=self.equipo,
+            categoria=self.categoria_hard,
+            prioridad=self.prioridad_media,
+            estado=self.estado_proceso,
+        )
+        resp_hist = self.client.get(reverse('cliente_historico'))
+        self.assertEqual(resp_hist.status_code, 200)
+        self.assertContains(resp_hist, 'xl:hidden grid grid-cols-1 md:grid-cols-2')
+        self.assertContains(resp_hist, '<article')
+        self.assertContains(resp_hist, 'aria-label="Estado del ticket: EN_PROCESO (En atención técnica)"')
+        self.assertContains(resp_hist, 'role="status"')
+
     @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
     def test_notificacion_resolucion_y_escalamiento(self):
         ticket = Ticket.objects.create(

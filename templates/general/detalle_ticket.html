@@ -43,10 +43,16 @@
             <div>
                 <h2 class="text-white font-medium mb-3 text-lg">Datos del caso:</h2>
                 <div class="bg-[#e6e6e6] text-gray-900 rounded-xl p-5 shadow-lg space-y-4 text-sm md:text-base font-medium">
-                    <p><span class="font-bold text-gray-700">Estado:</span> {{ ticket.estado.nombre }}</p>
+                    <p class="flex items-center gap-2 flex-wrap">
+                        <span class="font-bold text-gray-700">Estado:</span>
+                        <span role="status" aria-label="Estado actual del ticket: {{ ticket.estado.nombre }}" class="inline-flex items-center gap-1.5 px-3 py-1 text-xs rounded-full bg-gray-800 text-white font-bold">
+                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span>{{ ticket.estado.nombre }}</span>
+                        </span>
+                    </p>
                     <p><span class="font-bold text-gray-700">Soporte:</span> {{ ticket.modalidad.nombre|default:"Presencial / Remoto" }}</p>
                     <p><span class="font-bold text-gray-700">Atendido por:</span> {% if ticket.tecnico_asignado %}{{ ticket.tecnico_asignado.get_full_name|default:ticket.tecnico_asignado.username }}{% else %}Pendiente por asignar{% endif %}</p>
-                    <p><span class="font-bold text-gray-700">Prioridad:</span> {{ ticket.prioridad.nombre }}</p>
+                    <p><span class="font-bold text-gray-700">Prioridad:</span> <span aria-label="Prioridad del ticket: {{ ticket.prioridad.nombre }}">{{ ticket.prioridad.nombre }}</span></p>
                 </div>
             </div>
 

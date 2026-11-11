@@ -8,84 +8,130 @@
     {% if messages %}
     <div class="space-y-2">
         {% for message in messages %}
-        <div class="p-4 rounded-lg font-semibold text-sm {% if message.tags == 'error' %}bg-red-500/20 text-red-300 border border-red-500/50{% else %}bg-green-500/20 text-green-300 border border-green-500/50{% endif %}">
+        <div class="p-4 rounded-lg font-semibold text-sm {% if message.tags == 'error' %}bg-red-500/20 text-red-300 border border-red-500/50{% else %}bg-green-500/20 text-green-300 border border-green-500/50{% endif %}" role="alert">
             {{ message }}
         </div>
         {% endfor %}
     </div>
     {% endif %}
 
-    <!-- Formulario de Creación de Reporte Conectado al Controlador Django -->
-    <form id="formReporte" action="{% url 'crear_reporte' %}" method="POST" enctype="multipart/form-data" class="w-full flex flex-col gap-8 h-full">
+    <!-- Formulario de Creación de Reporte Conectado al Controlador Django (Predictivo + Feedback en Tiempo Real) -->
+    <form id="formReporte" action="{% url 'crear_reporte' %}" method="POST" enctype="multipart/form-data" novalidate class="w-full flex flex-col gap-8 h-full">
         {% csrf_token %}
         
         <!-- Cabecera de Campos: 1 col en Móvil (375px), 2 cols en Tableta (768px), 3 cols en Escritorio (1280px+) -->
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6 items-center">
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6 items-start">
             
-            <!-- ASUNTO -->
-            <div class="flex items-center gap-3 w-full">
-                <label for="asunto" class="font-medium min-w-[70px]">Asunto:</label>
-                <input type="text" id="asunto" name="asunto" maxlength="20" placeholder="(Asunto Max. 20 caracteres)" 
-                       class="bg-[#e6e6e6] text-gray-900 rounded-full px-4 h-[44px] flex-1 min-w-0 focus:ring-2 focus:ring-orange-500 focus:outline-none placeholder-gray-600 font-medium">
+            <!-- ASUNTO (con autocompletado predictivo y feedback en tiempo real) -->
+            <div class="flex flex-col gap-1 w-full">
+                <div class="flex items-center gap-3 w-full">
+                    <label for="asunto" class="font-medium min-w-[70px]">Asunto *:</label>
+                    <input type="text" id="asunto" name="asunto" required minlength="3" maxlength="20" list="sugerenciasAsunto"
+                           placeholder="(Asunto Max. 20 caracteres)"
+                           aria-describedby="feedbackAsunto"
+                           aria-invalid="false"
+                           class="bg-[#e6e6e6] text-gray-900 rounded-full px-4 h-[44px] flex-1 min-w-0 focus:ring-2 focus:ring-orange-500 focus:outline-none placeholder-gray-600 font-medium transition-all">
+                    <datalist id="sugerenciasAsunto">
+                        <option value="Falla de encendido"></option>
+                        <option value="Sin red / Internet"></option>
+                        <option value="Error de software"></option>
+                        <option value="Falla de impresora"></option>
+                        <option value="Pantalla azul"></option>
+                        <option value="Lentitud extrema"></option>
+                    </datalist>
+                </div>
+                <div class="flex justify-between items-center pl-[82px] pr-2 min-h-[20px]">
+                    <p id="feedbackAsunto" class="text-xs font-bold text-red-400 hidden" role="alert" aria-live="polite">
+                        ⚠ El asunto es obligatorio (mínimo 3 caracteres).
+                    </p>
+                    <span id="contadorAsunto" class="text-xs text-gray-400 ml-auto">0/20</span>
+                </div>
             </div>
 
-            <!-- SERIAL -->
-            <div class="flex items-center gap-3 w-full relative custom-dropdown-container">
-                <span class="font-medium min-w-[70px] md:min-w-[50px]">Serial:</span>
-                <input type="hidden" name="serial" value="">
-                <button type="button" aria-haspopup="listbox" aria-expanded="false" class="custom-dropdown-btn bg-[#e6e6e6] text-gray-900 rounded-full px-4 h-[44px] flex-1 min-w-0 flex items-center justify-center focus:ring-2 focus:ring-orange-500 focus:outline-none font-medium relative">
-                    <span class="selected-text text-gray-600 truncate">Seleccione equipo...</span>
-                </button>
-                <ul role="listbox" tabindex="-1" class="custom-dropdown-list hidden absolute top-full left-0 right-0 mt-2 bg-[#e6e6e6] rounded-md shadow-xl border border-gray-300 overflow-hidden z-50 animate-fade-in text-gray-900 font-medium text-center max-h-48 overflow-y-auto">
-                    <li role="option" data-value="" tabindex="0" class="px-4 py-2 hover:bg-gray-300 cursor-pointer focus:bg-gray-300 focus:outline-none transition-colors border-b border-gray-300 text-gray-600 italic">Seleccione equipo...</li>
-                    {% for eq in equipos %}
-                    <li role="option" data-value="{{ eq.serial }}" tabindex="0" class="px-4 py-2 hover:bg-gray-300 cursor-pointer focus:bg-gray-300 focus:outline-none transition-colors border-b border-gray-300">{{ eq.marca }} {{ eq.modelo }} ({{ eq.serial }})</li>
-                    {% empty %}
-                    <li role="option" data-value="GENERIC-001" tabindex="0" class="px-4 py-2 hover:bg-gray-300 cursor-pointer focus:bg-gray-300 focus:outline-none transition-colors">Equipo TI General</li>
-                    {% endfor %}
-                </ul>
+            <!-- SERIAL (con filtro predictivo de búsqueda de equipos) -->
+            <div class="flex flex-col gap-1 w-full">
+                <div class="flex items-center gap-3 w-full relative custom-dropdown-container" id="dropdownSerialContainer">
+                    <span class="font-medium min-w-[70px] md:min-w-[50px]">Serial:</span>
+                    <input type="hidden" id="inputSerialHidden" name="serial" value="">
+                    <button type="button" id="btnSerialDropdown" aria-haspopup="listbox" aria-expanded="false" aria-label="Seleccionar serial de equipo" class="custom-dropdown-btn bg-[#e6e6e6] text-gray-900 rounded-full px-4 h-[44px] flex-1 min-w-0 flex items-center justify-between gap-2 focus:ring-2 focus:ring-orange-500 focus:outline-none font-medium relative">
+                        <span class="selected-text text-gray-600 truncate">Seleccione equipo...</span>
+                        <svg class="w-4 h-4 shrink-0 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div class="custom-dropdown-list hidden absolute top-full left-0 right-0 mt-2 bg-[#e6e6e6] rounded-md shadow-xl border border-gray-300 overflow-hidden z-50 animate-fade-in text-gray-900 font-medium">
+                        <div class="p-2 border-b border-gray-300 bg-gray-200">
+                            <input type="text" id="filtroPredictivoSerial" placeholder="🔍 Filtrar serial, marca o modelo..." aria-label="Filtrar equipos de forma predictiva" class="w-full bg-white text-gray-900 text-xs rounded px-3 py-2 min-h-[36px] border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        </div>
+                        <ul role="listbox" tabindex="-1" class="max-h-48 overflow-y-auto text-center">
+                            <li role="option" data-value="" tabindex="0" class="px-4 py-2 hover:bg-gray-300 cursor-pointer focus:bg-gray-300 focus:outline-none transition-colors border-b border-gray-300 text-gray-600 italic">Seleccione equipo...</li>
+                            {% for eq in equipos %}
+                            <li role="option" data-value="{{ eq.serial }}" tabindex="0" class="opcion-predictiva px-4 py-2 hover:bg-gray-300 cursor-pointer focus:bg-gray-300 focus:outline-none transition-colors border-b border-gray-300">{{ eq.marca }} {{ eq.modelo }} ({{ eq.serial }})</li>
+                            {% empty %}
+                            <li role="option" data-value="GENERIC-001" tabindex="0" class="opcion-predictiva px-4 py-2 hover:bg-gray-300 cursor-pointer focus:bg-gray-300 focus:outline-none transition-colors">Equipo TI General (GENERIC-001)</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                <div class="pl-[82px] md:pl-[62px] min-h-[20px]">
+                    <span id="sugerenciaPredictivaEquipo" class="text-xs text-emerald-400 font-medium hidden" aria-live="polite"></span>
+                </div>
             </div>
 
-            <!-- CATEGORÍA -->
-            <div class="flex items-center gap-3 w-full md:col-span-2 xl:col-span-1 relative custom-dropdown-container">
-                <span class="font-medium min-w-[70px] xl:min-w-[80px]">Categoría:</span>
-                <input type="hidden" name="categoria" value="">
-                <button type="button" aria-haspopup="listbox" aria-expanded="false" class="custom-dropdown-btn bg-[#e6e6e6] text-gray-900 rounded-full px-4 h-[44px] flex-1 min-w-0 flex items-center justify-center focus:ring-2 focus:ring-orange-500 focus:outline-none font-medium relative">
-                    <span class="selected-text text-gray-600 truncate">Seleccione categoría...</span>
-                </button>
-                <ul role="listbox" tabindex="-1" class="custom-dropdown-list hidden absolute top-full left-0 right-0 mt-2 bg-[#e6e6e6] rounded-md shadow-xl border border-gray-300 overflow-hidden z-50 animate-fade-in text-gray-900 font-medium text-center">
-                    <li role="option" data-value="" tabindex="0" class="px-4 py-2 hover:bg-gray-300 cursor-pointer focus:bg-gray-300 focus:outline-none transition-colors border-b border-gray-300 text-gray-600 italic">Seleccione categoría...</li>
-                    {% for cat in categorias %}
-                    <li role="option" data-value="{{ cat.id }}" tabindex="0" class="px-4 py-2 hover:bg-gray-300 cursor-pointer focus:bg-gray-300 focus:outline-none transition-colors border-b border-gray-300">{{ cat.nombre }}</li>
-                    {% empty %}
-                    <li role="option" data-value="General" tabindex="0" class="px-4 py-2 hover:bg-gray-300 cursor-pointer focus:bg-gray-300">General</li>
-                    {% endfor %}
-                </ul>
+            <!-- CATEGORÍA (sincronizada con el motor predictivo) -->
+            <div class="flex flex-col gap-1 w-full md:col-span-2 xl:col-span-1">
+                <div class="flex items-center gap-3 w-full relative custom-dropdown-container" id="dropdownCategoriaContainer">
+                    <span class="font-medium min-w-[70px] xl:min-w-[80px]">Categoría:</span>
+                    <input type="hidden" id="inputCategoriaHidden" name="categoria" value="">
+                    <button type="button" id="btnCategoriaDropdown" aria-haspopup="listbox" aria-expanded="false" aria-label="Seleccionar categoría de incidencia" class="custom-dropdown-btn bg-[#e6e6e6] text-gray-900 rounded-full px-4 h-[44px] flex-1 min-w-0 flex items-center justify-between gap-2 focus:ring-2 focus:ring-orange-500 focus:outline-none font-medium relative">
+                        <span id="textoCategoriaSeleccionada" class="selected-text text-gray-600 truncate">Seleccione categoría...</span>
+                        <svg class="w-4 h-4 shrink-0 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <ul role="listbox" tabindex="-1" class="custom-dropdown-list hidden absolute top-full left-0 right-0 mt-2 bg-[#e6e6e6] rounded-md shadow-xl border border-gray-300 overflow-hidden z-50 animate-fade-in text-gray-900 font-medium text-center">
+                        <li role="option" data-value="" tabindex="0" class="px-4 py-2 hover:bg-gray-300 cursor-pointer focus:bg-gray-300 focus:outline-none transition-colors border-b border-gray-300 text-gray-600 italic">Seleccione categoría...</li>
+                        {% for cat in categorias %}
+                        <li role="option" data-value="{{ cat.id }}" data-nombre="{{ cat.nombre }}" tabindex="0" class="px-4 py-2 hover:bg-gray-300 cursor-pointer focus:bg-gray-300 focus:outline-none transition-colors border-b border-gray-300">{{ cat.nombre }}</li>
+                        {% empty %}
+                        <li role="option" data-value="General" data-nombre="General" tabindex="0" class="px-4 py-2 hover:bg-gray-300 cursor-pointer focus:bg-gray-300">General</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div class="pl-[82px] xl:pl-[92px] min-h-[20px]">
+                    <span id="badgePrediccionCategoria" class="text-xs text-amber-400 font-semibold hidden" aria-live="polite"></span>
+                </div>
             </div>
         </div>
 
         <!-- ÁREA INFERIOR: 1 col en Móvil (375px), 2 cols en Tableta (768px), 3 cols en Escritorio (1280px+) -->
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 h-full min-h-[400px]">
             
-            <!-- DESCRIPCIÓN -->
+            <!-- DESCRIPCIÓN (con validación en tiempo real y análisis predictivo mientras escribe) -->
             <div class="flex flex-col h-full">
-                <label for="descripcion" class="mb-2 font-medium">Descripción *:</label>
-                <textarea id="descripcion" name="descripcion" required class="flex-1 bg-[#e6e6e6] text-gray-900 rounded-xl p-4 min-h-[220px] focus:ring-2 focus:ring-orange-500 focus:outline-none resize-none font-medium" placeholder="Escriba aquí los detalles del problema..."></textarea>
+                <div class="flex justify-between items-center mb-2">
+                    <label for="descripcion" class="font-medium">Descripción *:</label>
+                    <span id="estadoCampoDescripcion" class="text-xs text-gray-400">Mínimo 10 caracteres</span>
+                </div>
+                <textarea id="descripcion" name="descripcion" required minlength="10"
+                          aria-describedby="feedbackDescripcion"
+                          aria-invalid="false"
+                          class="flex-1 bg-[#e6e6e6] text-gray-900 rounded-xl p-4 min-h-[220px] focus:ring-2 focus:ring-orange-500 focus:outline-none resize-none font-medium transition-all"
+                          placeholder="Escriba aquí los detalles del problema (ej. el equipo no enciende, pantalla azul, sin conexión de red)..."></textarea>
+                <p id="feedbackDescripcion" class="text-xs font-bold text-red-400 mt-2 hidden" role="alert" aria-live="polite">
+                    ⚠ La descripción es obligatoria (detalla el problema con al menos 10 caracteres).
+                </p>
             </div>
 
-            <!-- REPORTE IA CON FEEDBACK DE CARGA -->
+            <!-- REPORTE IA PREDICTIVO CON AUTO-COMPLETADO DE CAMPOS -->
             <div class="flex flex-col h-full relative">
-                <label class="mb-2 font-medium">Reporte Generado por IA:</label>
-                <div class="flex-1 bg-[#e6e6e6] text-gray-900 rounded-xl p-4 min-h-[220px] flex flex-col relative pb-20" aria-readonly="true">
+                <label class="mb-2 font-medium">Asistente Predictivo e IA:</label>
+                <div class="flex-1 bg-[#e6e6e6] text-gray-900 rounded-xl p-4 min-h-[220px] flex flex-col relative pb-20" aria-live="polite">
                     
-                    <div id="resultadoIA" class="space-y-4 font-medium flex-1 text-gray-500 italic text-center mt-8 transition-opacity">
-                        Panel IA en espera de datos...
+                    <div id="resultadoIA" class="space-y-3 font-medium flex-1 text-gray-600 italic text-center mt-6 transition-opacity">
+                        Escriba en la descripción o presione el botón inferior para obtener sugerencias predictivas de Asunto y Categoría...
                     </div>
 
-                    <div class="absolute bottom-6 left-0 right-0 flex justify-center">
-                        <button type="button" id="btnGenerarIA" class="bg-[#d47c35] text-gray-900 font-semibold px-6 py-2 rounded-md min-h-[44px] hover:bg-[#b86729] focus:ring-2 focus:ring-white transition-all shadow-md flex items-center justify-center gap-2">
+                    <div class="absolute bottom-5 left-0 right-0 flex justify-center gap-3 px-4">
+                        <button type="button" id="btnGenerarIA" class="bg-[#d47c35] text-gray-900 font-semibold px-5 py-2 rounded-md min-h-[44px] hover:bg-[#b86729] focus:ring-2 focus:ring-white transition-all shadow-md flex items-center justify-center gap-2">
                             <span id="textoBtnIA">Generar reporte con IA</span>
-                            <svg id="spinnerIA" class="animate-spin hidden h-5 w-5 text-gray-900" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <svg id="spinnerIA" class="animate-spin hidden h-5 w-5 text-gray-900" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
@@ -94,35 +140,51 @@
                 </div>
             </div>
 
-            <!-- EVIDENCIAS -->
+            <!-- MÓDULO DE CARGA DE EVIDENCIAS MULTIMEDIA (JPG, PNG, JPEG - Límite visual 5MB) -->
             <div class="flex flex-col h-full md:col-span-2 xl:col-span-1 pl-0 xl:pl-6 border-l-0 xl:border-l border-gray-600 justify-between">
                 <div>
-                    <p class="font-medium mb-3">Cargar Evidencia (JPG, PNG, JPEG Max. 5MB *)</p>
+                    <div class="mb-3">
+                        <p class="font-medium">Cargar Evidencia Multimedia</p>
+                        <div class="flex flex-wrap items-center gap-2 mt-1 text-xs">
+                            <span class="bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2.5 py-0.5 rounded-full font-semibold" aria-label="Formatos permitidos: exclusivamente JPG, PNG y JPEG">
+                                📷 Formatos: JPG, PNG, JPEG
+                            </span>
+                            <span class="bg-blue-500/20 text-blue-300 border border-blue-500/40 px-2.5 py-0.5 rounded-full font-semibold" aria-label="Límite máximo de tamaño por archivo: 5 Megabytes">
+                                ⚖️ Límite máximo: 5 MB
+                            </span>
+                        </div>
+                    </div>
                     
-                    <div class="mb-4 flex items-center justify-between">
-                        <label for="file-upload" class="bg-[#d47c35] text-gray-900 font-semibold px-6 py-2 rounded-md min-h-[44px] inline-flex items-center gap-2 cursor-pointer hover:bg-[#b86729] focus-within:ring-2 focus-within:ring-white transition-colors shadow-md">
-                            Explorar 
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
-                            <input id="file-upload" name="evidencias" type="file" class="sr-only" accept=".jpg,.jpeg,.png" multiple>
+                    <div class="mb-4 flex items-center justify-between gap-3">
+                        <label for="file-upload" class="bg-[#d47c35] text-gray-900 font-semibold px-6 py-2 rounded-md min-h-[44px] min-w-[44px] inline-flex items-center gap-2 cursor-pointer hover:bg-[#b86729] focus-within:ring-2 focus-within:ring-white transition-colors shadow-md">
+                            <span>Explorar archivos</span>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
+                            <input id="file-upload" name="evidencias" type="file" class="sr-only" accept=".jpg,.jpeg,.png,image/jpeg,image/png" multiple aria-describedby="ayudaEvidencias errorState">
                         </label>
+                        <span id="ayudaEvidencias" class="text-xs text-gray-300 font-medium">Máx. 5.0 MB c/u</span>
                     </div>
 
                     <div class="bg-[#e6e6e6] text-gray-900 rounded-xl p-4 shadow-inner min-h-[160px] flex flex-col justify-start relative">
-                        <div id="emptyState" class="text-gray-500 text-sm italic mt-2 text-center my-auto">
-                            Ningún archivo seleccionado aún.
+                        <div id="emptyState" class="text-gray-600 text-sm italic mt-2 text-center my-auto">
+                            Ningún archivo seleccionado aún (JPG, PNG o JPEG hasta 5MB).
                         </div>
-                        <div id="fileListContainer" class="space-y-2"></div>
+                        <div id="fileListContainer" class="space-y-2" aria-live="polite"></div>
 
-                        <div id="errorState" class="hidden flex flex-col items-center mt-auto pb-2 pt-4 border-t border-gray-300">
-                            <p class="text-red-600 font-bold text-xs text-center" role="alert">⚠ Uno o más archivos poseen un formato inválido o exceden 5MB.</p>
+                        <div id="errorState" class="hidden flex flex-col items-center mt-auto pb-2 pt-4 border-t border-gray-300" role="alert" aria-live="assertive">
+                            <p id="errorStateText" class="text-red-700 font-bold text-xs text-center">
+                                ⚠ Uno o más archivos poseen un formato inválido (solo JPG, PNG, JPEG) o exceden el límite de 5MB.
+                            </p>
                         </div>
                     </div>
                 </div>
 
-                <div class="mt-6 flex justify-center">
-                    <button type="submit" id="btnSubmitReporte" class="bg-[#d47c35] text-gray-900 font-semibold px-8 py-3 rounded-md min-h-[44px] hover:bg-[#b86729] focus:ring-2 focus:ring-white transition-all shadow-lg flex items-center justify-center gap-2 w-48">
+                <div class="mt-6 flex flex-col items-center gap-2">
+                    <p id="feedbackFormularioGeneral" class="text-xs font-bold text-red-400 hidden text-center" role="alert" aria-live="assertive">
+                        ⚠ Por favor complete los campos obligatorios marcados en rojo antes de enviar el reporte.
+                    </p>
+                    <button type="submit" id="btnSubmitReporte" class="bg-[#d47c35] text-gray-900 font-semibold px-8 py-3 rounded-md min-h-[44px] min-w-[44px] hover:bg-[#b86729] focus:ring-2 focus:ring-white transition-all shadow-lg flex items-center justify-center gap-2 w-48">
                         <span id="textoBtnSubmit">Crear reporte</span>
-                        <svg id="spinnerSubmit" class="animate-spin hidden h-5 w-5 text-gray-900" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <svg id="spinnerSubmit" class="animate-spin hidden h-5 w-5 text-gray-900" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
@@ -137,13 +199,180 @@
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        /* === EFECTO DE CARGA PARA BOTÓN DE IA === */
+        const inputAsunto = document.getElementById('asunto');
+        const feedbackAsunto = document.getElementById('feedbackAsunto');
+        const contadorAsunto = document.getElementById('contadorAsunto');
+
+        const inputDescripcion = document.getElementById('descripcion');
+        const feedbackDescripcion = document.getElementById('feedbackDescripcion');
+        const estadoCampoDescripcion = document.getElementById('estadoCampoDescripcion');
+
+        const inputCategoriaHidden = document.getElementById('inputCategoriaHidden');
+        const textoCategoriaSeleccionada = document.getElementById('textoCategoriaSeleccionada');
+        const badgePrediccionCategoria = document.getElementById('badgePrediccionCategoria');
+
         const btnGenerarIA = document.getElementById('btnGenerarIA');
         const textoBtnIA = document.getElementById('textoBtnIA');
         const spinnerIA = document.getElementById('spinnerIA');
         const resultadoIA = document.getElementById('resultadoIA');
 
+        const formReporte = document.getElementById('formReporte');
+        const btnSubmitReporte = document.getElementById('btnSubmitReporte');
+        const textoBtnSubmit = document.getElementById('textoBtnSubmit');
+        const spinnerSubmit = document.getElementById('spinnerSubmit');
+        const feedbackFormularioGeneral = document.getElementById('feedbackFormularioGeneral');
+
+        /* ===================================================================
+           1. SISTEMA DE RETROALIMENTACIÓN INMEDIATA EN TIEMPO REAL
+           =================================================================== */
+        function validarAsuntoEnTiempoReal(mostrarVacio = true) {
+            const val = inputAsunto.value.trim();
+            contadorAsunto.textContent = `${inputAsunto.value.length}/20`;
+            if (val.length === 0) {
+                if (mostrarVacio) {
+                    feedbackAsunto.textContent = '⚠ El campo Asunto no puede estar vacío.';
+                    feedbackAsunto.classList.remove('hidden');
+                    inputAsunto.setAttribute('aria-invalid', 'true');
+                    inputAsunto.classList.add('ring-2', 'ring-red-500');
+                }
+                return false;
+            } else if (val.length < 3) {
+                feedbackAsunto.textContent = '⚠ El asunto debe tener al menos 3 caracteres.';
+                feedbackAsunto.classList.remove('hidden');
+                inputAsunto.setAttribute('aria-invalid', 'true');
+                inputAsunto.classList.add('ring-2', 'ring-red-500');
+                return false;
+            }
+            feedbackAsunto.classList.add('hidden');
+            inputAsunto.setAttribute('aria-invalid', 'false');
+            inputAsunto.classList.remove('ring-2', 'ring-red-500');
+            return true;
+        }
+
+        function validarDescripcionEnTiempoReal(mostrarVacio = true) {
+            const val = inputDescripcion.value.trim();
+            if (val.length === 0) {
+                estadoCampoDescripcion.textContent = 'Campo vacío';
+                estadoCampoDescripcion.className = 'text-xs text-red-400 font-semibold';
+                if (mostrarVacio) {
+                    feedbackDescripcion.textContent = '⚠ La descripción del problema no puede estar vacía.';
+                    feedbackDescripcion.classList.remove('hidden');
+                    inputDescripcion.setAttribute('aria-invalid', 'true');
+                    inputDescripcion.classList.add('ring-2', 'ring-red-500');
+                }
+                return false;
+            } else if (val.length < 10) {
+                estadoCampoDescripcion.textContent = `${val.length}/10 caracteres mín.`;
+                estadoCampoDescripcion.className = 'text-xs text-amber-400 font-semibold';
+                feedbackDescripcion.textContent = `⚠ Ingrese al menos 10 caracteres para describir el fallo (actual: ${val.length}).`;
+                feedbackDescripcion.classList.remove('hidden');
+                inputDescripcion.setAttribute('aria-invalid', 'true');
+                inputDescripcion.classList.add('ring-2', 'ring-red-500');
+                return false;
+            }
+            estadoCampoDescripcion.textContent = '✓ Descripción válida';
+            estadoCampoDescripcion.className = 'text-xs text-emerald-400 font-semibold';
+            feedbackDescripcion.classList.add('hidden');
+            inputDescripcion.setAttribute('aria-invalid', 'false');
+            inputDescripcion.classList.remove('ring-2', 'ring-red-500');
+            return true;
+        }
+
+        inputAsunto.addEventListener('input', () => {
+            validarAsuntoEnTiempoReal(true);
+            feedbackFormularioGeneral.classList.add('hidden');
+        });
+        inputAsunto.addEventListener('blur', () => validarAsuntoEnTiempoReal(true));
+
+        /* ===================================================================
+           2. FORMULARIO PREDICTIVO (SUGERENCIA DE CATEGORÍA Y ASUNTO EN VIVO)
+           =================================================================== */
+        const reglasPredictivas = [
+            {
+                keywords: ['enciende', 'apaga', 'pantalla', 'teclado', 'mouse', 'disco', 'ssd', 'fuente', 'pitido', 'ventilador', 'impresora', 'bateria', 'hardware', 'cable', 'monitor'],
+                categoria: 'Hardware',
+                asuntoSugerido: 'Falla de Hardware'
+            },
+            {
+                keywords: ['red', 'internet', 'wifi', 'conexion', 'ip', 'dns', 'router', 'switch', 'cableado', 'vpn', 'servidor', 'ping'],
+                categoria: 'Redes',
+                asuntoSugerido: 'Sin red / Internet'
+            },
+            {
+                keywords: ['windows', 'office', 'excel', 'correo', 'sistema', 'licencia', 'programa', 'instalar', 'error', 'actualizacion', 'software', 'clave', 'acceso', 'lento'],
+                categoria: 'Software',
+                asuntoSugerido: 'Error de Software'
+            }
+        ];
+
+        function detectarPrediccion(texto) {
+            const lower = texto.toLowerCase();
+            for (const regla of reglasPredictivas) {
+                if (regla.keywords.some(k => lower.includes(k))) {
+                    return regla;
+                }
+            }
+            return {
+                categoria: 'Hardware',
+                asuntoSugerido: 'Falla de equipo TI'
+            };
+        }
+
+        function aplicarSugerenciaCategoria(nombreCategoria) {
+            const opcionesCat = document.querySelectorAll('#dropdownCategoriaContainer [role="option"]');
+            opcionesCat.forEach(op => {
+                const nombreOp = (op.dataset.nombre || op.textContent || '').trim();
+                if (nombreOp.toLowerCase() === nombreCategoria.toLowerCase()) {
+                    inputCategoriaHidden.value = op.dataset.value || nombreOp;
+                    textoCategoriaSeleccionada.textContent = nombreOp;
+                    textoCategoriaSeleccionada.classList.remove('text-gray-600');
+                    badgePrediccionCategoria.textContent = `✨ Categoría sugerida automáticamente: ${nombreOp}`;
+                    badgePrediccionCategoria.classList.remove('hidden');
+                }
+            });
+        }
+
+        inputDescripcion.addEventListener('input', () => {
+            validarDescripcionEnTiempoReal(true);
+            feedbackFormularioGeneral.classList.add('hidden');
+
+            const texto = inputDescripcion.value.trim();
+            if (texto.length >= 12) {
+                const pred = detectarPrediccion(texto);
+                if (!inputCategoriaHidden.value) {
+                    aplicarSugerenciaCategoria(pred.categoria);
+                }
+                resultadoIA.classList.remove('text-gray-600', 'italic', 'text-center', 'mt-6');
+                resultadoIA.classList.add('text-gray-900', 'text-left');
+                resultadoIA.innerHTML = `
+                    <div class="space-y-2 text-sm">
+                        <p><span class="font-bold text-gray-800">✨ Predicción en vivo:</span></p>
+                        <p><span class="font-bold text-gray-700">Asunto sugerido:</span> <span class="text-orange-800 font-semibold">${pred.asuntoSugerido}</span></p>
+                        <p><span class="font-bold text-gray-700">Categoría detectada:</span> <span class="text-emerald-800 font-semibold">${pred.categoria}</span></p>
+                        <button type="button" id="btnAplicarPrediccion" class="mt-2 bg-gray-800 text-white text-xs font-semibold px-3 py-2 rounded-md min-h-[44px] hover:bg-gray-700 transition-colors">
+                            Aplicar sugerencia al formulario
+                        </button>
+                    </div>
+                `;
+                const btnAplicar = document.getElementById('btnAplicarPrediccion');
+                if (btnAplicar) {
+                    btnAplicar.addEventListener('click', () => {
+                        if (!inputAsunto.value.trim()) {
+                            inputAsunto.value = pred.asuntoSugerido.slice(0, 20);
+                            validarAsuntoEnTiempoReal(false);
+                        }
+                        aplicarSugerenciaCategoria(pred.categoria);
+                    });
+                }
+            }
+        });
+        inputDescripcion.addEventListener('blur', () => validarDescripcionEnTiempoReal(true));
+
+        /* === BOTÓN GENERAR REPORTE CON IA === */
         btnGenerarIA.addEventListener('click', () => {
+            const textoBase = inputDescripcion.value.trim();
+            const pred = detectarPrediccion(textoBase);
+
             btnGenerarIA.disabled = true;
             btnGenerarIA.classList.add('opacity-75', 'cursor-not-allowed');
             textoBtnIA.textContent = 'Analizando...';
@@ -156,38 +385,34 @@
                 textoBtnIA.textContent = 'Actualizar IA';
                 spinnerIA.classList.add('hidden');
                 
-                resultadoIA.classList.remove('opacity-50', 'text-gray-500', 'italic', 'text-center', 'mt-8');
+                resultadoIA.classList.remove('opacity-50', 'text-gray-600', 'italic', 'text-center', 'mt-6');
                 resultadoIA.classList.add('text-gray-900', 'text-left');
                 resultadoIA.innerHTML = `
-                    <p class="animate-fade-in"><span class="font-bold text-gray-700">Asunto sugerido:</span> Falla de encendido y ruido</p>
-                    <p class="animate-fade-in" style="animation-delay: 100ms;"><span class="font-bold text-gray-700">Categoría Detectada:</span> Hardware</p>
+                    <p class="animate-fade-in"><span class="font-bold text-gray-700">Asunto sugerido:</span> ${pred.asuntoSugerido}</p>
+                    <p class="animate-fade-in" style="animation-delay: 100ms;"><span class="font-bold text-gray-700">Categoría Detectada:</span> ${pred.categoria}</p>
                     <p class="animate-fade-in text-sm text-gray-700 mt-2 border-t border-gray-400 pt-2" style="animation-delay: 200ms;">
-                        <strong>Síntesis IA:</strong> El usuario reporta que el equipo funcionaba ayer antes de un corte eléctrico. Actualmente presenta pitidos de placa base y ruido anormal de ventilación, lo que sugiere un posible daño en la fuente de poder o saturación térmica.
+                        <strong>Síntesis IA:</strong> Basado en los síntomas descritos, se clasifica preventivamente en el área de <strong>${pred.categoria}</strong> para asignación prioritaria a soporte técnico.
                     </p>
                 `;
-            }, 1500);
+                if (!inputAsunto.value.trim()) {
+                    inputAsunto.value = pred.asuntoSugerido.slice(0, 20);
+                    validarAsuntoEnTiempoReal(false);
+                }
+                aplicarSugerenciaCategoria(pred.categoria);
+            }, 600);
         });
 
-        /* === EFECTO DE CARGA PARA BOTÓN SUBMIT === */
-        const formReporte = document.getElementById('formReporte');
-        const btnSubmitReporte = document.getElementById('btnSubmitReporte');
-        const textoBtnSubmit = document.getElementById('textoBtnSubmit');
-        const spinnerSubmit = document.getElementById('spinnerSubmit');
-        
-        formReporte.addEventListener('submit', () => {
-            btnSubmitReporte.disabled = true;
-            btnSubmitReporte.classList.add('opacity-75', 'cursor-not-allowed');
-            textoBtnSubmit.textContent = 'Procesando...';
-            spinnerSubmit.classList.remove('hidden');
-        });
-
-        /* === VALIDACIÓN DINÁMICA DE ARCHIVOS === */
+        /* ===================================================================
+           3. VALIDACIÓN EN TIEMPO REAL DE CARGA DE EVIDENCIAS (JPG/PNG/JPEG, 5MB)
+           =================================================================== */
         const fileInput = document.getElementById('file-upload');
         const fileListContainer = document.getElementById('fileListContainer');
         const emptyState = document.getElementById('emptyState');
         const errorState = document.getElementById('errorState');
+        const errorStateText = document.getElementById('errorStateText');
         
         const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+        const validExtensions = ['.jpg', '.jpeg', '.png'];
         const maxSize = 5 * 1024 * 1024;
         let invalidFilesCount = 0;
         const dataTransfer = new DataTransfer();
@@ -195,22 +420,29 @@
         fileInput.addEventListener('change', function(e) {
             errorState.classList.add('hidden');
             let hasError = false;
+            let lastErrorReason = '';
             const files = e.target.files;
 
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
-                if (document.querySelector(`[data-name="${file.name}"]`)) continue; 
+                if (document.querySelector(`[data-name="${CSS.escape(file.name)}"]`)) continue;
+
+                const lowerName = file.name.toLowerCase();
+                const extValida = validExtensions.some(ext => lowerName.endsWith(ext));
+                const mimeValido = validTypes.includes(file.type);
 
                 let isValid = true;
                 let errorMsg = '';
 
-                if (!validTypes.includes(file.type)) {
+                if (!mimeValido || !extValida) {
                     isValid = false;
-                    errorMsg = 'Formato inválido';
+                    errorMsg = 'Formato inválido (Solo se admiten JPG, PNG y JPEG)';
+                    lastErrorReason = errorMsg;
                 } else if (file.size > maxSize) {
                     isValid = false;
-                    let sizeMB = (file.size / (1024 * 1024)).toFixed(1);
-                    errorMsg = `Excede 5MB (${sizeMB}MB)`;
+                    let sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                    errorMsg = `Excede el límite máximo de 5MB (${sizeMB} MB)`;
+                    lastErrorReason = errorMsg;
                 }
 
                 if (!isValid) {
@@ -223,7 +455,10 @@
                 }
             }
 
-            if (hasError) errorState.classList.remove('hidden');
+            if (hasError) {
+                errorStateText.textContent = `⚠ Error en carga multimedia: ${lastErrorReason}.`;
+                errorState.classList.remove('hidden');
+            }
             fileInput.files = dataTransfer.files;
             checkUIState();
         });
@@ -231,30 +466,32 @@
         function renderFileItem(file, isValid, errorMsg) {
             const fileDOM = document.createElement('div');
             fileDOM.dataset.name = file.name;
+            const sizeKB = Math.max(1, Math.round(file.size / 1024));
             
             if (isValid) {
-                fileDOM.className = 'flex items-center justify-between gap-2 p-2 bg-gray-300 rounded-md animate-fade-in shadow-sm border border-transparent';
+                fileDOM.className = 'flex items-center justify-between gap-2 p-2 bg-gray-300 rounded-md animate-fade-in shadow-sm border border-emerald-600/40';
                 fileDOM.innerHTML = `
                     <div class="flex items-center gap-2 overflow-hidden">
-                        <svg class="w-5 h-5 flex-shrink-0 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                        <span class="text-xs font-semibold truncate text-gray-800" title="${file.name}">${file.name}</span>
+                        <span class="text-emerald-800 font-bold" aria-hidden="true">✓</span>
+                        <span class="text-xs font-semibold truncate text-gray-900" title="${file.name}">${file.name} (${sizeKB} KB)</span>
                     </div>
-                    <button type="button" class="btn-eliminar text-gray-500 hover:text-red-700 hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 rounded p-1 transition-colors flex-shrink-0" aria-label="Eliminar ${file.name}">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    <button type="button" class="btn-eliminar min-h-[44px] min-w-[44px] text-gray-700 hover:text-red-700 hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-red-600 rounded p-1 transition-colors flex-shrink-0 inline-flex items-center justify-center" aria-label="Eliminar archivo ${file.name}">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </button>
                 `;
             } else {
-                fileDOM.className = 'flex items-center justify-between gap-2 p-2 bg-red-100 rounded-md animate-fade-in shadow-sm border border-red-400';
+                fileDOM.className = 'flex items-center justify-between gap-2 p-2 bg-red-100 rounded-md animate-fade-in shadow-sm border border-red-500';
+                fileDOM.setAttribute('role', 'alert');
                 fileDOM.innerHTML = `
                     <div class="flex flex-col overflow-hidden w-full">
                         <div class="flex items-center gap-2">
-                            <svg class="w-5 h-5 flex-shrink-0 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                            <span class="text-xs font-bold truncate text-red-800" title="${file.name}">${file.name}</span>
+                            <span class="text-red-700 font-bold" aria-hidden="true">⚠</span>
+                            <span class="text-xs font-bold truncate text-red-900" title="${file.name}">${file.name}</span>
                         </div>
-                        <span class="text-[10px] text-red-600 font-semibold ml-7">${errorMsg}</span>
+                        <span class="text-[11px] text-red-700 font-semibold ml-5">${errorMsg}</span>
                     </div>
-                    <button type="button" class="btn-eliminar text-red-600 hover:text-white hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-700 rounded p-1 transition-colors flex-shrink-0" aria-label="Eliminar error">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    <button type="button" class="btn-eliminar min-h-[44px] min-w-[44px] text-red-700 hover:text-white hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-700 rounded p-1 transition-colors flex-shrink-0 inline-flex items-center justify-center" aria-label="Descartar archivo con error ${file.name}">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </button>
                 `;
             }
@@ -297,7 +534,43 @@
             }
         }
 
-        /* === DROPDOWNS PERSONALIZADOS === */
+        /* === VALIDACIÓN AL ENVIAR EL FORMULARIO === */
+        formReporte.addEventListener('submit', (e) => {
+            const asuntoOk = validarAsuntoEnTiempoReal(true);
+            const descOk = validarDescripcionEnTiempoReal(true);
+
+            if (!asuntoOk || !descOk || invalidFilesCount > 0) {
+                e.preventDefault();
+                feedbackFormularioGeneral.classList.remove('hidden');
+                if (!asuntoOk) {
+                    inputAsunto.focus();
+                } else if (!descOk) {
+                    inputDescripcion.focus();
+                }
+                return;
+            }
+
+            feedbackFormularioGeneral.classList.add('hidden');
+            btnSubmitReporte.disabled = true;
+            btnSubmitReporte.classList.add('opacity-75', 'cursor-not-allowed');
+            textoBtnSubmit.textContent = 'Procesando...';
+            spinnerSubmit.classList.remove('hidden');
+        });
+
+        /* === DROPDOWNS PERSONALIZADOS Y BUSCADOR PREDICTIVO DE SERIAL === */
+        const filtroPredictivoSerial = document.getElementById('filtroPredictivoSerial');
+        if (filtroPredictivoSerial) {
+            filtroPredictivoSerial.addEventListener('click', (e) => e.stopPropagation());
+            filtroPredictivoSerial.addEventListener('input', (e) => {
+                const termino = e.target.value.toLowerCase().trim();
+                const items = document.querySelectorAll('#dropdownSerialContainer .opcion-predictiva');
+                items.forEach(li => {
+                    const txt = li.textContent.toLowerCase();
+                    li.style.display = txt.includes(termino) ? '' : 'none';
+                });
+            });
+        }
+
         const dropdownContainers = document.querySelectorAll('.custom-dropdown-container');
         dropdownContainers.forEach(container => {
             const btn = container.querySelector('.custom-dropdown-btn');
@@ -318,16 +591,16 @@
             btn.addEventListener('click', (e) => { e.stopPropagation(); list.classList.contains('hidden') ? openDropdown() : closeDropdown(); });
             options.forEach((opcion) => {
                 opcion.addEventListener('click', () => {
-                    selectedText.textContent = opcion.textContent;
-                    if (hiddenInput) hiddenInput.value = opcion.dataset.value || opcion.textContent.trim();
+                    selectedText.textContent = opcion.textContent.trim();
+                    if (hiddenInput) hiddenInput.value = opcion.dataset.value !== undefined ? opcion.dataset.value : opcion.textContent.trim();
                     selectedText.classList.remove('text-gray-600');
                     closeDropdown();
                 });
                 opcion.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
-                        selectedText.textContent = opcion.textContent;
-                        if (hiddenInput) hiddenInput.value = opcion.dataset.value || opcion.textContent.trim();
+                        selectedText.textContent = opcion.textContent.trim();
+                        if (hiddenInput) hiddenInput.value = opcion.dataset.value !== undefined ? opcion.dataset.value : opcion.textContent.trim();
                         selectedText.classList.remove('text-gray-600');
                         closeDropdown();
                         btn.focus();

@@ -109,12 +109,35 @@
                         </a>
                     </td>
                     <td class="bg-[#e6e6e6] py-3 px-2 {% if forloop.first %}rounded-t-xl{% endif %} {% if forloop.last %}rounded-b-xl{% endif %}">
-                        <span class="inline-block px-2.5 py-1 text-xs rounded-full bg-gray-700 text-white font-semibold">
-                            {{ ticket.estado.nombre }}
+                        {% with est_upper=ticket.estado.nombre|upper %}
+                        {% if ticket.estado.es_final or 'RESUELTO' in est_upper or 'CERRADO' in est_upper %}
+                        <span role="status" aria-label="Estado del ticket: {{ ticket.estado.nombre }} (Finalizado)" class="inline-flex items-center gap-1.5 px-3 py-1 text-xs rounded-full bg-emerald-800 text-white font-bold border border-emerald-950">
+                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                            <span>{{ ticket.estado.nombre }}</span>
                         </span>
+                        {% elif 'PROCESO' in est_upper or 'REVIS' in est_upper %}
+                        <span role="status" aria-label="Estado del ticket: {{ ticket.estado.nombre }} (En atención técnica)" class="inline-flex items-center gap-1.5 px-3 py-1 text-xs rounded-full bg-blue-800 text-white font-bold border border-blue-950">
+                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span>{{ ticket.estado.nombre }}</span>
+                        </span>
+                        {% elif 'ESCALA' in est_upper %}
+                        <span role="status" aria-label="Estado del ticket: {{ ticket.estado.nombre }} (Escalado a especialista)" class="inline-flex items-center gap-1.5 px-3 py-1 text-xs rounded-full bg-amber-800 text-white font-bold border border-amber-950">
+                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
+                            <span>{{ ticket.estado.nombre }}</span>
+                        </span>
+                        {% else %}
+                        <span role="status" aria-label="Estado del ticket: {{ ticket.estado.nombre }} (Pendiente / Recién creado)" class="inline-flex items-center gap-1.5 px-3 py-1 text-xs rounded-full bg-gray-800 text-white font-bold border border-gray-950">
+                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            <span>{{ ticket.estado.nombre }}</span>
+                        </span>
+                        {% endif %}
+                        {% endwith %}
                     </td>
                     <td class="bg-[#e6e6e6] py-3 px-2 {% if forloop.first %}rounded-t-xl{% endif %} {% if forloop.last %}rounded-b-xl{% endif %} font-semibold">
-                        {{ ticket.prioridad.nombre }}
+                        <span aria-label="Prioridad del ticket: {{ ticket.prioridad.nombre }}" class="inline-flex items-center gap-1">
+                            <span aria-hidden="true">{% if ticket.prioridad.nivel >= 3 %}🔴{% elif ticket.prioridad.nivel == 2 %}🟠{% else %}🔵{% endif %}</span>
+                            <span>{{ ticket.prioridad.nombre }}</span>
+                        </span>
                     </td>
                 </tr>
                 {% empty %}
@@ -141,8 +164,39 @@
                 <div class="space-y-2 text-sm">
                     <div class="flex justify-between gap-2"><span class="font-semibold text-gray-600">Fecha:</span> <span>{{ ticket.fecha_creacion|date:"d/m/Y" }}</span></div>
                     <div class="flex justify-between gap-2"><span class="font-semibold text-gray-600">Asunto:</span> <span class="truncate">{{ ticket.asunto }}</span></div>
-                    <div class="flex justify-between gap-2"><span class="font-semibold text-gray-600">Estado:</span> <span>{{ ticket.estado.nombre }}</span></div>
-                    <div class="flex justify-between gap-2"><span class="font-semibold text-gray-600">Prioridad:</span> <span>{{ ticket.prioridad.nombre }}</span></div>
+                    <div class="flex justify-between items-center gap-2">
+                        <span class="font-semibold text-gray-600">Estado:</span>
+                        {% with est_upper=ticket.estado.nombre|upper %}
+                        {% if ticket.estado.es_final or 'RESUELTO' in est_upper or 'CERRADO' in est_upper %}
+                        <span role="status" aria-label="Estado del ticket: {{ ticket.estado.nombre }} (Finalizado)" class="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-full bg-emerald-800 text-white font-bold">
+                            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                            <span>{{ ticket.estado.nombre }}</span>
+                        </span>
+                        {% elif 'PROCESO' in est_upper or 'REVIS' in est_upper %}
+                        <span role="status" aria-label="Estado del ticket: {{ ticket.estado.nombre }} (En atención técnica)" class="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-full bg-blue-800 text-white font-bold">
+                            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span>{{ ticket.estado.nombre }}</span>
+                        </span>
+                        {% elif 'ESCALA' in est_upper %}
+                        <span role="status" aria-label="Estado del ticket: {{ ticket.estado.nombre }} (Escalado a especialista)" class="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-full bg-amber-800 text-white font-bold">
+                            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
+                            <span>{{ ticket.estado.nombre }}</span>
+                        </span>
+                        {% else %}
+                        <span role="status" aria-label="Estado del ticket: {{ ticket.estado.nombre }} (Pendiente / Recién creado)" class="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-full bg-gray-800 text-white font-bold">
+                            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            <span>{{ ticket.estado.nombre }}</span>
+                        </span>
+                        {% endif %}
+                        {% endwith %}
+                    </div>
+                    <div class="flex justify-between items-center gap-2">
+                        <span class="font-semibold text-gray-600">Prioridad:</span>
+                        <span aria-label="Prioridad del ticket: {{ ticket.prioridad.nombre }}" class="inline-flex items-center gap-1 font-semibold">
+                            <span aria-hidden="true">{% if ticket.prioridad.nivel >= 3 %}🔴{% elif ticket.prioridad.nivel == 2 %}🟠{% else %}🔵{% endif %}</span>
+                            <span>{{ ticket.prioridad.nombre }}</span>
+                        </span>
+                    </div>
                 </div>
             </div>
             <div class="mt-4 pt-3 border-t border-gray-300 flex justify-end">
