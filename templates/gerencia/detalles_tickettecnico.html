@@ -214,8 +214,10 @@
     const overlay = document.getElementById('modalOverlay');
     const mAsignar = document.getElementById('modalAsignar');
     const mQuitar = document.getElementById('modalQuitar');
+    let elementoDisparadorModal = null;
 
     function abrirModal(modalId) {
+        elementoDisparadorModal = document.activeElement;
         overlay.classList.remove('hidden');
         overlay.classList.add('flex');
         mAsignar.classList.add('hidden');
@@ -224,6 +226,8 @@
         modalSeleccionado.classList.remove('hidden');
         modalSeleccionado.classList.add('flex');
         document.body.style.overflow = 'hidden';
+        const primerControl = modalSeleccionado.querySelector('select, input:not([type="hidden"]), button');
+        if (primerControl) primerControl.focus();
     }
 
     function cerrarModal() {
@@ -234,10 +238,20 @@
         mQuitar.classList.add('hidden');
         mQuitar.classList.remove('flex');
         document.body.style.overflow = '';
+        if (elementoDisparadorModal && typeof elementoDisparadorModal.focus === 'function') {
+            elementoDisparadorModal.focus();
+        }
     }
+    window.cerrarModal = cerrarModal;
 
     overlay.addEventListener('click', (e) => {
         if (e.target === overlay) { cerrarModal(); }
+    });
+    overlay.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            cerrarModal();
+        }
     });
 </script>
 {% endblock %}

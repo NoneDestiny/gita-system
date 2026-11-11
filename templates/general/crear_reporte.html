@@ -129,7 +129,7 @@
                     </div>
 
                     <div class="absolute bottom-5 left-0 right-0 flex justify-center gap-3 px-4">
-                        <button type="button" id="btnGenerarIA" class="bg-[#d47c35] text-gray-900 font-semibold px-5 py-2 rounded-md min-h-[44px] hover:bg-[#b86729] focus:ring-2 focus:ring-white transition-all shadow-md flex items-center justify-center gap-2">
+                        <button type="button" id="btnGenerarIA" aria-haspopup="dialog" aria-controls="modalAsistenteIA" aria-label="Generar reporte y clasificación sugerida con Asistente de IA (Atajo: Alt + I)" title="Generar reporte con IA (Alt + I)" class="bg-[#d47c35] text-gray-900 font-semibold px-5 py-2 rounded-md min-h-[44px] hover:bg-[#b86729] focus:ring-2 focus:ring-white transition-all shadow-md flex items-center justify-center gap-2">
                             <span id="textoBtnIA">Generar reporte con IA</span>
                             <svg id="spinnerIA" class="animate-spin hidden h-5 w-5 text-gray-900" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -182,17 +182,52 @@
                     <p id="feedbackFormularioGeneral" class="text-xs font-bold text-red-400 hidden text-center" role="alert" aria-live="assertive">
                         ⚠ Por favor complete los campos obligatorios marcados en rojo antes de enviar el reporte.
                     </p>
-                    <button type="submit" id="btnSubmitReporte" class="bg-[#d47c35] text-gray-900 font-semibold px-8 py-3 rounded-md min-h-[44px] min-w-[44px] hover:bg-[#b86729] focus:ring-2 focus:ring-white transition-all shadow-lg flex items-center justify-center gap-2 w-48">
+                    <button type="submit" id="btnSubmitReporte" aria-label="Crear y enviar reporte de incidencia (Atajo: Ctrl + Enter)" title="Crear reporte (Ctrl + Enter)" class="bg-[#d47c35] text-gray-900 font-semibold px-8 py-3 rounded-md min-h-[44px] min-w-[44px] hover:bg-[#b86729] focus:ring-2 focus:ring-white transition-all shadow-lg flex items-center justify-center gap-2 w-48">
                         <span id="textoBtnSubmit">Crear reporte</span>
                         <svg id="spinnerSubmit" class="animate-spin hidden h-5 w-5 text-gray-900" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
                     </button>
+                    <p class="text-[11px] text-gray-400 text-center">
+                        Atajos rápidos (ISO 9241-11): <kbd class="px-1.5 py-0.5 bg-gray-700 text-gray-200 rounded">Alt+I</kbd> Asistente IA • <kbd class="px-1.5 py-0.5 bg-gray-700 text-gray-200 rounded">Ctrl+Enter</kbd> Enviar • <kbd class="px-1.5 py-0.5 bg-gray-700 text-gray-200 rounded">Esc</kbd> Cerrar ventana
+                    </p>
                 </div>
             </div>
         </div>
     </form>
+</div>
+{% endblock %}
+
+{% block modals %}
+<!-- VENTANA EMERGENTE DEL ASISTENTE DE IA (SIN TRAMPAS DE FOCO - ISO 9241-11) -->
+<div id="modalAsistenteIA" class="fixed inset-0 bg-black/60 z-[100] hidden items-center justify-center p-4 backdrop-blur-sm animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="tituloModalIA" aria-describedby="cuerpoModalIA">
+    <div class="bg-[#e6e6e6] text-gray-900 rounded-xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-400 flex flex-col">
+        <div class="bg-[#d47c35] px-6 py-4 flex justify-between items-center border-b border-[#b86729]">
+            <h3 id="tituloModalIA" class="font-bold text-lg text-gray-900 flex items-center gap-2">
+                <span aria-hidden="true">✨</span>
+                <span>Sugerencia del Asistente de IA</span>
+            </h3>
+            <button type="button" id="btnCerrarModalIAX" aria-label="Cerrar ventana emergente del Asistente de IA (Escape)" class="min-h-[44px] min-w-[44px] inline-flex items-center justify-center text-gray-900 hover:text-white rounded-md p-1 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        <div id="cuerpoModalIA" class="p-6 space-y-3 text-sm md:text-base font-medium">
+            <p><span class="font-bold text-gray-700">Asunto sugerido:</span> <span id="modalIAAsunto" class="font-semibold text-orange-800">Falla de equipo TI</span></p>
+            <p><span class="font-bold text-gray-700">Categoría sugerida:</span> <span id="modalIACategoria" class="font-semibold text-emerald-800">Hardware</span></p>
+            <p id="modalIASintesis" class="text-sm text-gray-700 border-t border-gray-300 pt-3">
+                Clasificación automática generada para reducir la carga cognitiva de llenado.
+            </p>
+        </div>
+        <div class="px-6 py-4 bg-gray-200 flex justify-end gap-3 border-t border-gray-300">
+            <button type="button" id="btnIgnorarModalIA" aria-label="Cerrar sugerencia de IA y continuar edición manual" class="bg-gray-600 text-white font-semibold px-4 py-2 rounded-md min-h-[44px] min-w-[44px] hover:bg-gray-700 transition-colors">
+                Cerrar (Esc)
+            </button>
+            <button type="button" id="btnConfirmarModalIA" aria-label="Aplicar sugerencia de IA al formulario y continuar" class="bg-[#d47c35] text-gray-900 font-bold px-5 py-2 rounded-md min-h-[44px] min-w-[44px] hover:bg-[#b86729] transition-colors shadow">
+                Aplicar sugerencia (Enter)
+            </button>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
@@ -368,7 +403,81 @@
         });
         inputDescripcion.addEventListener('blur', () => validarDescripcionEnTiempoReal(true));
 
-        /* === BOTÓN GENERAR REPORTE CON IA === */
+        /* === BOTÓN GENERAR REPORTE CON IA Y VENTANA EMERGENTE LIBRE DE TRAMPAS DE FOCO === */
+        const modalAsistenteIA = document.getElementById('modalAsistenteIA');
+        const modalIAAsunto = document.getElementById('modalIAAsunto');
+        const modalIACategoria = document.getElementById('modalIACategoria');
+        const modalIASintesis = document.getElementById('modalIASintesis');
+        const btnCerrarModalIAX = document.getElementById('btnCerrarModalIAX');
+        const btnIgnorarModalIA = document.getElementById('btnIgnorarModalIA');
+        const btnConfirmarModalIA = document.getElementById('btnConfirmarModalIA');
+        let elementoDisparadorIA = null;
+        let ultimaPrediccionIA = null;
+
+        function abrirModalIA(pred) {
+            if (!modalAsistenteIA) return;
+            ultimaPrediccionIA = pred;
+            elementoDisparadorIA = document.activeElement || btnGenerarIA;
+            if (modalIAAsunto) modalIAAsunto.textContent = pred.asuntoSugerido;
+            if (modalIACategoria) modalIACategoria.textContent = pred.categoria;
+            if (modalIASintesis) {
+                modalIASintesis.innerHTML = `<strong>Síntesis IA:</strong> Basado en los síntomas descritos, se recomienda clasificar el reporte en <strong>${pred.categoria}</strong>.`;
+            }
+            modalAsistenteIA.classList.remove('hidden');
+            modalAsistenteIA.classList.add('flex');
+            if (btnConfirmarModalIA) btnConfirmarModalIA.focus();
+        }
+
+        function cerrarModalIA() {
+            if (!modalAsistenteIA || modalAsistenteIA.classList.contains('hidden')) return;
+            modalAsistenteIA.classList.add('hidden');
+            modalAsistenteIA.classList.remove('flex');
+            if (elementoDisparadorIA && typeof elementoDisparadorIA.focus === 'function') {
+                elementoDisparadorIA.focus();
+            } else if (btnGenerarIA) {
+                btnGenerarIA.focus();
+            }
+        }
+        window.cerrarModalIA = cerrarModalIA;
+
+        if (btnCerrarModalIAX) btnCerrarModalIAX.addEventListener('click', cerrarModalIA);
+        if (btnIgnorarModalIA) btnIgnorarModalIA.addEventListener('click', cerrarModalIA);
+        if (btnConfirmarModalIA) {
+            btnConfirmarModalIA.addEventListener('click', () => {
+                if (ultimaPrediccionIA) {
+                    inputAsunto.value = ultimaPrediccionIA.asuntoSugerido.slice(0, 20);
+                    validarAsuntoEnTiempoReal(false);
+                    aplicarSugerenciaCategoria(ultimaPrediccionIA.categoria);
+                }
+                cerrarModalIA();
+            });
+        }
+
+        if (modalAsistenteIA) {
+            modalAsistenteIA.addEventListener('click', (e) => {
+                if (e.target === modalAsistenteIA) cerrarModalIA();
+            });
+            // Gestión de foco accesible sin trampas de foco: Tab cicla limpiamente o Escape sale inmediatamente
+            modalAsistenteIA.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    cerrarModalIA();
+                } else if (e.key === 'Tab') {
+                    const focusables = [btnCerrarModalIAX, btnIgnorarModalIA, btnConfirmarModalIA].filter(Boolean);
+                    if (focusables.length === 0) return;
+                    const first = focusables[0];
+                    const last = focusables[focusables.length - 1];
+                    if (e.shiftKey && document.activeElement === first) {
+                        e.preventDefault();
+                        last.focus();
+                    } else if (!e.shiftKey && document.activeElement === last) {
+                        e.preventDefault();
+                        first.focus();
+                    }
+                }
+            });
+        }
+
         btnGenerarIA.addEventListener('click', () => {
             const textoBase = inputDescripcion.value.trim();
             const pred = detectarPrediccion(textoBase);
@@ -399,7 +508,19 @@
                     validarAsuntoEnTiempoReal(false);
                 }
                 aplicarSugerenciaCategoria(pred.categoria);
-            }, 600);
+                abrirModalIA(pred);
+            }, 400);
+        });
+
+        /* === ATAJOS DE TECLADO EN FORMULARIO DE REPORTE (Alt+I: IA, Ctrl+Enter: Enviar) === */
+        document.addEventListener('keydown', (e) => {
+            if (e.altKey && e.key.toLowerCase() === 'i') {
+                e.preventDefault();
+                btnGenerarIA.click();
+            } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                formReporte.requestSubmit ? formReporte.requestSubmit() : btnSubmitReporte.click();
+            }
         });
 
         /* ===================================================================

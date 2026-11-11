@@ -1,17 +1,30 @@
 {% extends 'base.html' %}
 
-{% block title %}GITA - Dashboard Gerencial{% endblock %}
+{% block title %}GITA - Dashboard Gerencial (SIG-543){% endblock %}
 
 {% block content %}
 <div class="flex-1 p-4 md:p-8 flex flex-col max-w-7xl mx-auto w-full gap-8">
     
-    <!-- SECCIÓN: Dashboard Operativo e Indicadores (Alertas Críticas) -->
-    <section>
-        <h2 class="text-2xl md:text-3xl font-bold text-white tracking-wide mb-4">
-            Dashboard operativo e indicadores
-        </h2>
+    <!-- =================================================================== -->
+    <!-- SECCIÓN 1: CABECERA OPERATIVA, ALERTAS E INDICADORES CRÍTICOS       -->
+    <!-- =================================================================== -->
+    <section aria-labelledby="tituloDashboardSIG">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+            <div>
+                <h2 id="tituloDashboardSIG" class="text-2xl md:text-3xl font-bold text-white tracking-wide">
+                    Dashboard operativo e indicadores (SIG-543)
+                </h2>
+                <p class="text-sm text-gray-300 mt-1">
+                    Transformación en tiempo real de la data operativa de HelpDesk desde PostgreSQL / ORM y API JSON.
+                </p>
+            </div>
+            <button type="button" id="btnRefrescarJSON" aria-label="Sincronizar indicadores en vivo desde el endpoint JSON" class="bg-[#d47c35] text-gray-900 font-bold px-4 py-2 rounded-md min-h-[44px] min-w-[44px] inline-flex items-center gap-2 hover:bg-[#b86729] transition-colors shadow-md">
+                <span aria-hidden="true">🔄</span>
+                <span id="textoRefrescarJSON">Actualizar en vivo (JSON)</span>
+            </button>
+        </div>
         
-        <div class="flex flex-col gap-3 font-medium text-sm md:text-base">
+        <div id="contenedorAlertasInventario" class="flex flex-col gap-3 font-medium text-sm md:text-base" aria-live="polite">
             {% if repuestos_criticos %}
                 <div class="flex items-center gap-2 text-yellow-500 bg-yellow-500/10 px-3 py-2 rounded-md w-fit border border-yellow-500/20" role="alert">
                     <span aria-hidden="true" class="text-lg">⚠️</span>
@@ -33,30 +46,239 @@
         </div>
     </section>
 
+    <!-- =================================================================== -->
+    <!-- SECCIÓN 2: PANEL DE FILTROS ADAPTATIVO                              -->
+    <!-- Agrupado en cabecera desplegable compacta en Móvil y Tableta (768px)-->
+    <!-- y barra completa horizontal en Escritorio (1280px+)                 -->
+    <!-- =================================================================== -->
+    <section aria-label="Panel de filtros gerenciales" class="bg-[#404348] rounded-xl border border-gray-600 shadow-lg overflow-hidden">
+        <!-- Cabecera Desplegable para Vista Móvil (375px) y Tableta (768px) -->
+        <div class="xl:hidden p-4 flex justify-between items-center border-b border-gray-600/60">
+            <div class="flex items-center gap-2">
+                <span aria-hidden="true" class="text-lg">🎛️</span>
+                <span class="font-bold text-white text-base">Filtros de Control Gerencial</span>
+            </div>
+            <button type="button" id="btnToggleFiltrosDashboard"
+                    aria-expanded="false"
+                    aria-controls="panelFiltrosColapsable"
+                    aria-label="Desplegar u ocultar panel de filtros del dashboard en tableta y móvil"
+                    class="bg-[#e6e6e6] text-gray-900 font-bold px-4 py-2 rounded-lg min-h-[44px] min-w-[44px] inline-flex items-center gap-2 hover:bg-gray-300 transition-colors shadow">
+                <span id="labelToggleFiltros">Mostrar filtros</span>
+                <svg id="iconoToggleFiltros" class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+        </div>
+
+        <!-- Contenedor Colapsable en Móvil/Tableta (768px) y Expandido en Escritorio (1280px+) -->
+        <div id="panelFiltrosColapsable" class="hidden xl:block p-4">
+            <form id="formFiltrosDashboard" method="GET" action="{% url 'gerente_dashboard' %}" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 items-end">
+                <div>
+                    <label for="filtroModalidad" class="block text-xs font-semibold text-gray-300 mb-1">Modalidad de Atención:</label>
+                    <select id="filtroModalidad" name="modalidad" class="w-full bg-[#e6e6e6] text-gray-900 font-semibold rounded-lg px-3 py-2 min-h-[44px]">
+                        <option value="">Todas las modalidades</option>
+                        {% for mod in modalidades_catalogo %}
+                        <option value="{{ mod.nombre }}" {% if filtros_activos.modalidad == mod.nombre %}selected{% endif %}>{{ mod.nombre }}</option>
+                        {% empty %}
+                        <option value="Presencial" {% if filtros_activos.modalidad == 'Presencial' %}selected{% endif %}>Presencial</option>
+                        <option value="Remoto" {% if filtros_activos.modalidad == 'Remoto' %}selected{% endif %}>Remoto</option>
+                        <option value="Taller" {% if filtros_activos.modalidad == 'Taller' %}selected{% endif %}>Taller</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label for="filtroTecnico" class="block text-xs font-semibold text-gray-300 mb-1">Técnico Especialista:</label>
+                    <select id="filtroTecnico" name="tecnico" class="w-full bg-[#e6e6e6] text-gray-900 font-semibold rounded-lg px-3 py-2 min-h-[44px]">
+                        <option value="">Todos los técnicos</option>
+                        {% for tec_item in tecnicos_catalogo %}
+                        <option value="{{ tec_item.id }}" {% if filtros_activos.tecnico == tec_item.id|stringformat:"s" %}selected{% endif %}>{{ tec_item.get_full_name|default:tec_item.username }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label for="filtroPrioridad" class="block text-xs font-semibold text-gray-300 mb-1">Nivel de Prioridad:</label>
+                    <select id="filtroPrioridad" name="prioridad" class="w-full bg-[#e6e6e6] text-gray-900 font-semibold rounded-lg px-3 py-2 min-h-[44px]">
+                        <option value="">Todas las prioridades</option>
+                        {% for prio in prioridades_catalogo %}
+                        <option value="{{ prio.nombre }}" {% if filtros_activos.prioridad == prio.nombre %}selected{% endif %}>{{ prio.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label for="filtroPeriodo" class="block text-xs font-semibold text-gray-300 mb-1">Periodo Analítico:</label>
+                    <select id="filtroPeriodo" name="periodo" class="w-full bg-[#e6e6e6] text-gray-900 font-semibold rounded-lg px-3 py-2 min-h-[44px]">
+                        <option value="" {% if not filtros_activos.periodo %}selected{% endif %}>Histórico completo</option>
+                        <option value="7" {% if filtros_activos.periodo == '7' %}selected{% endif %}>Últimos 7 días</option>
+                        <option value="30" {% if filtros_activos.periodo == '30' %}selected{% endif %}>Últimos 30 días</option>
+                        <option value="90" {% if filtros_activos.periodo == '90' %}selected{% endif %}>Últimos 90 días</option>
+                    </select>
+                </div>
+
+                <div class="flex gap-2">
+                    <button type="submit" id="btnAplicarFiltrosSIG" class="bg-[#d47c35] text-gray-900 font-bold px-5 py-2 rounded-lg min-h-[44px] min-w-[44px] flex-1 hover:bg-[#b86729] transition-colors shadow">
+                        Aplicar
+                    </button>
+                    <a href="{% url 'gerente_dashboard' %}" id="btnLimpiarFiltrosSIG" class="bg-gray-600 text-white font-semibold px-4 py-2 rounded-lg min-h-[44px] min-w-[44px] inline-flex items-center justify-center hover:bg-gray-500 transition-colors">
+                        Limpiar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- SECCIÓN 3: TARJETAS NUMÉRICAS DE CONTROL GERENCIAL (KPIs SIG-543)   -->
+    <!-- =================================================================== -->
+    <section aria-label="Tarjetas numéricas de indicadores clave">
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
+            <div class="bg-[#e6e6e6] text-gray-900 rounded-xl p-5 shadow-lg flex flex-col items-center justify-center text-center min-h-[90px] transform transition-transform hover:scale-105">
+                <span class="text-xs font-bold uppercase tracking-wider text-gray-600">Cumplimiento SLA</span>
+                <span id="kpiCumplimientoVal" class="text-xl md:text-2xl font-bold text-emerald-800 mt-1">%Cumplimiento: {{ cumplimiento_pct|default:100 }}%</span>
+            </div>
+            <div class="bg-[#e6e6e6] text-gray-900 rounded-xl p-5 shadow-lg flex flex-col items-center justify-center text-center min-h-[90px] transform transition-transform hover:scale-105">
+                <span class="text-xs font-bold uppercase tracking-wider text-gray-600">Tiempos Medios de Resolución</span>
+                <span id="kpiTiempoPromedioVal" class="text-xl md:text-2xl font-bold text-blue-900 mt-1">T. Promedio: {{ tiempo_promedio_hrs|default:"0.0" }}hrs</span>
+            </div>
+            <div class="bg-[#e6e6e6] text-gray-900 rounded-xl p-5 shadow-lg flex flex-col items-center justify-center text-center min-h-[90px] transform transition-transform hover:scale-105">
+                <span class="text-xs font-bold uppercase tracking-wider text-gray-600">Volumen de Escalamientos</span>
+                <span id="kpiEscalamientosVal" class="text-xl md:text-2xl font-bold text-amber-800 mt-1">Escalamientos: {{ total_escalamientos|default:0 }}</span>
+            </div>
+            <div class="bg-[#e6e6e6] text-gray-900 rounded-xl p-5 shadow-lg flex flex-col items-center justify-center text-center min-h-[90px] transform transition-transform hover:scale-105">
+                <span class="text-xs font-bold uppercase tracking-wider text-gray-600">Incidencias Activas</span>
+                <span id="kpiTicketsAbiertosVal" class="text-xl md:text-2xl font-bold text-gray-900 mt-1">Tickets abiertos: {{ tickets_abiertos_count|default:0 }}</span>
+            </div>
+            <div class="bg-[#e6e6e6] text-gray-900 rounded-xl p-5 shadow-lg flex flex-col items-center justify-center text-center min-h-[90px] transform transition-transform hover:scale-105 md:col-span-2 xl:col-span-1">
+                <span class="text-xs font-bold uppercase tracking-wider text-gray-600">Consumo de Inventario</span>
+                <span id="kpiRepuestosUsadosVal" class="text-xl md:text-2xl font-bold text-orange-800 mt-1">Repuestos usados: {{ total_repuestos_usados|default:0 }}</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- SECCIÓN 4: GRÁFICOS ANALÍTICOS DINÁMICOS (SIG-543)                  -->
+    <!-- 1. Cumplimiento SLA | 2. Volumen de Escalamientos por Modalidad     -->
+    <!-- 3. Distribución de Carga por Técnico | 4. Tiempos Medios Resolución -->
+    <!-- =================================================================== -->
+    <section aria-label="Gráficos gerenciales para toma de decisiones" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        <!-- GRÁFICO 1: CUMPLIMIENTO DE ACUERDOS DE NIVEL DE SERVICIO (SLA) -->
+        <article class="bg-[#e6e6e6] text-gray-900 rounded-xl p-5 shadow-lg flex flex-col justify-between">
+            <div>
+                <h3 class="text-lg font-bold text-gray-900 mb-1">1. Cumplimiento de Acuerdos de Nivel de Servicio (SLA)</h3>
+                <p class="text-xs text-gray-600 mb-4">Proporción de tickets dentro del umbral SLA frente a tickets con retraso</p>
+            </div>
+            <div id="chartCumplimientoSLA" class="space-y-3 my-auto">
+                <div>
+                    <div class="flex justify-between text-sm font-bold mb-1">
+                        <span class="text-emerald-800">✓ En Tiempo (Cumple SLA): <span id="slaEnTiempoCount">{{ tickets_en_tiempo }}</span></span>
+                        <span id="slaCumplimientoPctBarLabel">{{ cumplimiento_pct }}%</span>
+                    </div>
+                    <div class="w-full bg-gray-300 rounded-full h-5 overflow-hidden border border-gray-400">
+                        <div id="slaCumplimientoBar" class="bg-emerald-600 h-full transition-all duration-500" style="width: {{ cumplimiento_pct }}%;" role="progressbar" aria-valuenow="{{ cumplimiento_pct }}" aria-valuemin="0" aria-valuemax="100" aria-label="Porcentaje de cumplimiento SLA"></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="flex justify-between text-sm font-bold mb-1">
+                        <span class="text-red-800">⚠ Atrasados (Fuera de SLA): <span id="slaAtrasadosCount">{{ tickets_atrasados_global }}</span></span>
+                        <span id="slaIncumplimientoPctBarLabel">{{ incumplimiento_pct }}%</span>
+                    </div>
+                    <div class="w-full bg-gray-300 rounded-full h-5 overflow-hidden border border-gray-400">
+                        <div id="slaIncumplimientoBar" class="bg-red-600 h-full transition-all duration-500" style="width: {{ incumplimiento_pct }}%;" role="progressbar" aria-valuenow="{{ incumplimiento_pct }}" aria-valuemin="0" aria-valuemax="100" aria-label="Porcentaje fuera de SLA"></div>
+                    </div>
+                </div>
+            </div>
+        </article>
+
+        <!-- GRÁFICO 2: VOLUMEN DE ESCALAMIENTOS POR MODALIDAD -->
+        <article class="bg-[#e6e6e6] text-gray-900 rounded-xl p-5 shadow-lg flex flex-col justify-between">
+            <div>
+                <h3 class="text-lg font-bold text-gray-900 mb-1">2. Volumen de Escalamientos por Modalidad</h3>
+                <p class="text-xs text-gray-600 mb-4">Distribución de casos escalados según modalidad de atención</p>
+            </div>
+            <div id="chartEscalamientosModalidad" class="space-y-3 my-auto">
+                {% for item in escalamientos_por_modalidad %}
+                <div>
+                    <div class="flex justify-between text-sm font-bold mb-1">
+                        <span>{{ item.modalidad }}</span>
+                        <span>{{ item.cantidad }} caso(s) ({{ item.porcentaje }}%)</span>
+                    </div>
+                    <div class="w-full bg-gray-300 rounded-full h-4 overflow-hidden border border-gray-400">
+                        <div class="bg-[#d47c35] h-full transition-all duration-500" style="width: {% if item.porcentaje > 0 %}{{ item.porcentaje }}{% else %}4{% endif %}%;" role="progressbar" aria-valuenow="{{ item.porcentaje }}" aria-valuemin="0" aria-valuemax="100" aria-label="Escalamientos en modalidad {{ item.modalidad }}"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </article>
+
+        <!-- GRÁFICO 3: DISTRIBUCIÓN DE CARGA DE TRABAJO POR TÉCNICO -->
+        <article class="bg-[#e6e6e6] text-gray-900 rounded-xl p-5 shadow-lg flex flex-col justify-between">
+            <div>
+                <h3 class="text-lg font-bold text-gray-900 mb-1">3. Distribución de Carga de Trabajo por Técnico</h3>
+                <p class="text-xs text-gray-600 mb-4">Comparativa visual de tickets asignados activos vs. resueltos por especialista</p>
+            </div>
+            <div id="chartCargaTecnicos" class="space-y-3 my-auto">
+                {% for tec in carga_tecnicos %}
+                <div>
+                    <div class="flex justify-between text-sm font-bold mb-1">
+                        <span>{{ tec.nombre }}</span>
+                        <span>Activos: {{ tec.asignados }} | Resueltos: {{ tec.resueltos }} | SLA: {{ tec.cumplimiento_sla }}%</span>
+                    </div>
+                    <div class="w-full bg-gray-300 rounded-full h-4 overflow-hidden border border-gray-400 flex">
+                        <div class="bg-blue-700 h-full" style="width: {{ tec.cumplimiento_sla }}%;" title="Cumplimiento SLA {{ tec.cumplimiento_sla }}%"></div>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-sm italic text-gray-600">Sin técnicos activos para graficar.</p>
+                {% endfor %}
+            </div>
+        </article>
+
+        <!-- GRÁFICO 4: TIEMPOS MEDIOS DE RESOLUCIÓN -->
+        <article class="bg-[#e6e6e6] text-gray-900 rounded-xl p-5 shadow-lg flex flex-col justify-between">
+            <div>
+                <h3 class="text-lg font-bold text-gray-900 mb-1">4. Tiempos Medios de Resolución (Horas)</h3>
+                <p class="text-xs text-gray-600 mb-4">Tiempo medio invertido desde asignación/creación hasta resolución final</p>
+            </div>
+            <div id="chartTiemposResolucion" class="space-y-3 my-auto">
+                <div class="p-3 bg-gray-200 rounded-lg flex justify-between items-center border border-gray-300">
+                    <span class="font-bold text-gray-800">Promedio Global del HelpDesk:</span>
+                    <span id="chartTiempoGlobalHrs" class="text-lg font-bold text-blue-900">{{ tiempo_promedio_hrs|default:"0.0" }} hrs</span>
+                </div>
+                {% for tec in carga_tecnicos %}
+                <div class="flex justify-between items-center text-sm font-semibold border-b border-gray-300 pb-1">
+                    <span>{{ tec.nombre }}</span>
+                    <span class="text-gray-800 font-bold">{{ tec.tiempo_promedio_hrs }} hrs</span>
+                </div>
+                {% endfor %}
+            </div>
+        </article>
+
+    </section>
+
     <hr class="border-gray-600">
 
-    <h3 class="text-xl md:text-2xl font-bold text-white tracking-wide mt-2">
-        Carga de trabajo por técnico
-    </h3>
+    <!-- =================================================================== -->
+    <!-- SECCIÓN 5: TABLA DETALLADA DE CARGA DE TRABAJO POR TÉCNICO          -->
+    <!-- =================================================================== -->
+    <section aria-labelledby="tituloTablaCarga">
+        <h3 id="tituloTablaCarga" class="text-xl md:text-2xl font-bold text-white tracking-wide mb-4">
+            Carga de trabajo por técnico (Detalle Operativo)
+        </h3>
 
-    <!-- GRID PRINCIPAL: 1 col en Móvil (375px), 2 cols en Tableta (768px), Tabla + KPIs en Escritorio (1280px+) -->
-    <div class="grid grid-cols-1 md:grid-cols-2 xl:flex gap-8 xl:gap-12 w-full">
-        
-        <!-- COLUMNA IZQUIERDA: Tabla Comparativa -->
-        <div class="xl:flex-1">
-            
-            <div class="hidden xl:grid grid-cols-4 gap-4 px-6 text-gray-300 font-medium text-center border-b border-gray-600 pb-3 mb-2">
+        <div class="w-full">
+            <div class="hidden xl:grid grid-cols-5 gap-4 px-6 text-gray-300 font-medium text-center border-b border-gray-600 pb-3 mb-2">
                 <div class="text-left">Técnico</div>
                 <div>Asignados</div>
                 <div>Resueltos</div>
                 <div>Atrasados</div>
+                <div>T. Medio (hrs)</div>
             </div>
 
-            <div class="flex flex-col gap-4 xl:gap-0 bg-transparent xl:bg-[#e6e6e6] xl:rounded-xl xl:shadow-lg xl:overflow-hidden xl:py-2">
-                
+            <div id="tablaCargaTecnicosBody" class="flex flex-col gap-4 xl:gap-0 bg-transparent xl:bg-[#e6e6e6] xl:rounded-xl xl:shadow-lg xl:overflow-hidden xl:py-2">
                 {% for tec in carga_tecnicos %}
                 <div class="bg-[#e6e6e6] rounded-xl p-5 shadow-md xl:bg-transparent xl:rounded-none xl:p-0 xl:shadow-none transition-all duration-200 hover:bg-gray-300/50">
-                    <div class="grid grid-cols-1 xl:grid-cols-4 gap-3 xl:gap-4 items-center text-gray-900 font-medium xl:text-center text-base xl:px-6 xl:py-4 {% if not forloop.first %}xl:border-t xl:border-gray-300{% endif %}">
+                    <div class="grid grid-cols-1 xl:grid-cols-5 gap-3 xl:gap-4 items-center text-gray-900 font-medium xl:text-center text-base xl:px-6 xl:py-4 {% if not forloop.first %}xl:border-t xl:border-gray-300{% endif %}">
                         <div class="flex items-center justify-between xl:justify-start border-b border-gray-300 pb-2 xl:border-none xl:pb-0">
                             <span class="xl:hidden font-bold text-gray-600">Técnico:</span>
                             <a href="{% url 'gerente_detalle_tecnico' tec.id %}" class="font-bold xl:font-semibold text-blue-800 hover:underline xl:text-left truncate text-right">
@@ -66,6 +288,7 @@
                         <div class="flex items-center justify-between xl:justify-center"><span class="xl:hidden font-bold text-gray-600">Asignados:</span><span>{{ tec.asignados }}</span></div>
                         <div class="flex items-center justify-between xl:justify-center"><span class="xl:hidden font-bold text-gray-600">Resueltos:</span><span>{{ tec.resueltos }}</span></div>
                         <div class="flex items-center justify-between xl:justify-center"><span class="xl:hidden font-bold text-gray-600">Atrasados:</span><span class="{% if tec.atrasados > 0 %}text-red-700 font-bold{% else %}text-gray-900{% endif %}">{{ tec.atrasados }}</span></div>
+                        <div class="flex items-center justify-between xl:justify-center"><span class="xl:hidden font-bold text-gray-600">T. Medio:</span><span>{{ tec.tiempo_promedio_hrs }} hrs</span></div>
                     </div>
                 </div>
                 {% empty %}
@@ -73,36 +296,15 @@
                     No hay técnicos registrados en el sistema.
                 </div>
                 {% endfor %}
-
             </div>
         </div>
-
-        <!-- Divisor Semántico (Escritorio) -->
-        <div class="hidden xl:block w-px bg-gray-500 self-stretch mt-4 mb-4"></div>
-
-        <!-- COLUMNA DERECHA: KPIs -->
-        <div class="w-full xl:w-72 flex flex-col gap-6 justify-center">
-            <div class="bg-[#e6e6e6] text-gray-900 rounded-xl p-5 shadow-lg flex items-center justify-center text-center font-bold text-lg md:text-xl min-h-[70px] transform transition-transform hover:scale-105">
-                Tickets abiertos: {{ tickets_abiertos_count|default:0 }}
-            </div>
-            <div class="bg-[#e6e6e6] text-gray-900 rounded-xl p-5 shadow-lg flex items-center justify-center text-center font-bold text-lg md:text-xl min-h-[70px] transform transition-transform hover:scale-105">
-                %Cumplimiento: {{ cumplimiento_pct|default:100 }}%
-            </div>
-            <div class="bg-[#e6e6e6] text-gray-900 rounded-xl p-5 shadow-lg flex items-center justify-center text-center font-bold text-lg md:text-xl min-h-[70px] transform transition-transform hover:scale-105">
-                T. Promedio: {{ tiempo_promedio_hrs|default:"0.0" }}hrs
-            </div>
-            <div class="bg-[#e6e6e6] text-gray-900 rounded-xl p-5 shadow-lg flex items-center justify-center text-center font-bold text-lg md:text-xl min-h-[70px] transform transition-transform hover:scale-105">
-                Repuestos usados: {{ total_repuestos_usados|default:0 }}
-            </div>
-        </div>
-
-    </div>
+    </section>
 
     {% if movimientos_salida %}
     <hr class="border-gray-600">
 
-    <section>
-        <h3 class="text-xl md:text-2xl font-bold text-white tracking-wide mb-4">
+    <section aria-labelledby="tituloConsumoRepuestos">
+        <h3 id="tituloConsumoRepuestos" class="text-xl md:text-2xl font-bold text-white tracking-wide mb-4">
             Consumo operativo de repuestos en intervenciones técnicas
         </h3>
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 gap-4">
@@ -128,4 +330,123 @@
     </section>
     {% endif %}
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        /* ===================================================================
+           1. CABECERA DESPLEGABLE DE FILTROS EN TABLETA (768px) Y MÓVIL
+           =================================================================== */
+        const btnToggleFiltros = document.getElementById('btnToggleFiltrosDashboard');
+        const panelFiltros = document.getElementById('panelFiltrosColapsable');
+        const labelToggleFiltros = document.getElementById('labelToggleFiltros');
+        const iconoToggleFiltros = document.getElementById('iconoToggleFiltros');
+
+        if (btnToggleFiltros && panelFiltros) {
+            btnToggleFiltros.addEventListener('click', () => {
+                const isHidden = panelFiltros.classList.contains('hidden');
+                if (isHidden) {
+                    panelFiltros.classList.remove('hidden');
+                    btnToggleFiltros.setAttribute('aria-expanded', 'true');
+                    if (labelToggleFiltros) labelToggleFiltros.textContent = 'Ocultar filtros';
+                    if (iconoToggleFiltros) iconoToggleFiltros.classList.add('rotar-180');
+                } else {
+                    panelFiltros.classList.add('hidden');
+                    btnToggleFiltros.setAttribute('aria-expanded', 'false');
+                    if (labelToggleFiltros) labelToggleFiltros.textContent = 'Mostrar filtros';
+                    if (iconoToggleFiltros) iconoToggleFiltros.classList.remove('rotar-180');
+                }
+            });
+        }
+
+        /* ===================================================================
+           2. CONEXIÓN DINÁMICA CON LAS RESPUESTAS JSON DEL BACKEND (SIG-543)
+           =================================================================== */
+        const formFiltros = document.getElementById('formFiltrosDashboard');
+        const btnRefrescarJSON = document.getElementById('btnRefrescarJSON');
+        const textoRefrescarJSON = document.getElementById('textoRefrescarJSON');
+
+        async function sincronizarMetricasDesdeJSON() {
+            if (!formFiltros) return;
+            const params = new URLSearchParams(new FormData(formFiltros)).toString();
+            const endpointUrl = `{% url 'api_gerente_dashboard_metricas' %}?${params}`;
+
+            if (textoRefrescarJSON) textoRefrescarJSON.textContent = 'Sincronizando...';
+            try {
+                const resp = await fetch(endpointUrl, {
+                    headers: { 'Accept': 'application/json' }
+                });
+                if (!resp.ok) return;
+                const payload = await resp.json();
+                if (!payload || payload.status !== 'success') return;
+
+                const d = payload.data;
+                // Actualizar Tarjetas Numéricas KPI
+                document.getElementById('kpiCumplimientoVal').textContent = `%Cumplimiento: ${d.kpis.cumplimiento_sla_pct}%`;
+                document.getElementById('kpiTiempoPromedioVal').textContent = `T. Promedio: ${d.kpis.tiempo_medio_resolucion_hrs}hrs`;
+                document.getElementById('kpiEscalamientosVal').textContent = `Escalamientos: ${d.kpis.total_escalamientos}`;
+                document.getElementById('kpiTicketsAbiertosVal').textContent = `Tickets abiertos: ${d.kpis.tickets_abiertos}`;
+                document.getElementById('kpiRepuestosUsadosVal').textContent = `Repuestos usados: ${d.kpis.total_repuestos_usados}`;
+
+                // Actualizar Gráfico 1: Cumplimiento SLA
+                document.getElementById('slaEnTiempoCount').textContent = d.cumplimiento_sla.en_tiempo;
+                document.getElementById('slaAtrasadosCount').textContent = d.cumplimiento_sla.atrasados;
+                document.getElementById('slaCumplimientoPctBarLabel').textContent = `${d.cumplimiento_sla.cumplimiento_pct}%`;
+                document.getElementById('slaIncumplimientoPctBarLabel').textContent = `${d.cumplimiento_sla.incumplimiento_pct}%`;
+                document.getElementById('slaCumplimientoBar').style.width = `${d.cumplimiento_sla.cumplimiento_pct}%`;
+                document.getElementById('slaIncumplimientoBar').style.width = `${d.cumplimiento_sla.incumplimiento_pct}%`;
+
+                // Actualizar Gráfico 2: Volumen de Escalamientos por Modalidad
+                const contEsc = document.getElementById('chartEscalamientosModalidad');
+                if (contEsc && Array.isArray(d.volumen_escalamientos_modalidad)) {
+                    contEsc.innerHTML = d.volumen_escalamientos_modalidad.map(item => `
+                        <div>
+                            <div class="flex justify-between text-sm font-bold mb-1">
+                                <span>${item.modalidad}</span>
+                                <span>${item.cantidad} caso(s) (${item.porcentaje}%)</span>
+                            </div>
+                            <div class="w-full bg-gray-300 rounded-full h-4 overflow-hidden border border-gray-400">
+                                <div class="bg-[#d47c35] h-full transition-all duration-500" style="width: ${item.porcentaje > 0 ? item.porcentaje : 4}%;"></div>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+
+                // Actualizar Gráfico 3: Distribución de Carga de Trabajo por Técnico
+                const contCarga = document.getElementById('chartCargaTecnicos');
+                if (contCarga && Array.isArray(d.distribucion_carga_tecnicos)) {
+                    contCarga.innerHTML = d.distribucion_carga_tecnicos.map(tec => `
+                        <div>
+                            <div class="flex justify-between text-sm font-bold mb-1">
+                                <span>${tec.nombre}</span>
+                                <span>Activos: ${tec.asignados} | Resueltos: ${tec.resueltos} | SLA: ${tec.cumplimiento_sla}%</span>
+                            </div>
+                            <div class="w-full bg-gray-300 rounded-full h-4 overflow-hidden border border-gray-400 flex">
+                                <div class="bg-blue-700 h-full" style="width: ${tec.cumplimiento_sla}%;"></div>
+                            </div>
+                        </div>
+                    `).join('') || '<p class="text-sm italic text-gray-600">Sin técnicos activos para graficar.</p>';
+                }
+
+                // Actualizar Gráfico 4: Tiempos Medios de Resolución
+                const elemGlobalHrs = document.getElementById('chartTiempoGlobalHrs');
+                if (elemGlobalHrs) elemGlobalHrs.textContent = `${d.tiempos_medios_resolucion.global_horas} hrs`;
+            } catch (e) {
+                // Mantiene datos renderizados por ORM en caso de fallo de red
+            } finally {
+                if (textoRefrescarJSON) textoRefrescarJSON.textContent = 'Actualizar en vivo (JSON)';
+            }
+        }
+
+        if (btnRefrescarJSON) {
+            btnRefrescarJSON.addEventListener('click', sincronizarMetricasDesdeJSON);
+        }
+        if (formFiltros) {
+            formFiltros.querySelectorAll('select').forEach(sel => {
+                sel.addEventListener('change', sincronizarMetricasDesdeJSON);
+            });
+        }
+    });
+</script>
 {% endblock %}

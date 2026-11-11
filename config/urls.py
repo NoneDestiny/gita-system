@@ -11,6 +11,7 @@ from users.views import (
     error_403_view,
     # Flujo Gerencia
     gerente_dashboard_view,
+    api_gerente_dashboard_metricas_view,
     gerente_inventario_view,
     gerente_gestion_tecnicos_view,
     gerente_detalle_tecnico_view,
@@ -53,8 +54,9 @@ urlpatterns = [
     path('tecnico/ticket/<int:ticket_id>/escalar/', escalar_ticket_view, name='tecnico_escalar'),
     path('tecnico/historial/', tecnico_historial_view, name='tecnico_historial'),
 
-    # Rutas protegidas por RBAC - GERENTE
+    # Rutas protegidas por RBAC - GERENTE (SIG-543)
     path('gerencia/dashboard/', gerente_dashboard_view, name='gerente_dashboard'),
+    path('api/v1/gerencia/dashboard-metricas/', api_gerente_dashboard_metricas_view, name='api_gerente_dashboard_metricas'),
     path('gerencia/inventario/', gerente_inventario_view, name='gerente_inventario'),
     path('gerencia/gestion-tecnicos/', gerente_gestion_tecnicos_view, name='gerente_gestion_tecnicos'),
     path('gerencia/tecnicos/<int:tecnico_id>/', gerente_detalle_tecnico_view, name='gerente_detalle_tecnico'),

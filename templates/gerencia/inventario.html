@@ -233,8 +233,10 @@
     const overlay = document.getElementById('modalOverlay');
     const mAgregar = document.getElementById('modalAgregar');
     const mEditar = document.getElementById('modalEditar');
+    let elementoDisparadorInv = null;
 
     function abrirModal(modalId) {
+        elementoDisparadorInv = document.activeElement;
         overlay.classList.remove('hidden');
         overlay.classList.add('flex');
         mAgregar.classList.add('hidden');
@@ -243,6 +245,8 @@
         modalSeleccionado.classList.remove('hidden');
         modalSeleccionado.classList.add('flex');
         document.body.style.overflow = 'hidden';
+        const primerControl = modalSeleccionado.querySelector('input:not([type="hidden"]):not([readonly]), button');
+        if (primerControl) primerControl.focus();
     }
 
     function cerrarModal() {
@@ -253,10 +257,20 @@
         mEditar.classList.add('hidden');
         mEditar.classList.remove('flex');
         document.body.style.overflow = '';
+        if (elementoDisparadorInv && typeof elementoDisparadorInv.focus === 'function') {
+            elementoDisparadorInv.focus();
+        }
     }
+    window.cerrarModal = cerrarModal;
 
     overlay.addEventListener('click', (e) => {
         if (e.target === overlay) { cerrarModal(); }
+    });
+    overlay.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            cerrarModal();
+        }
     });
 
     document.querySelectorAll('.btn-sumar').forEach(btn => {

@@ -201,17 +201,157 @@ def logout_view(request):
 # VISTAS PROTEGIDAS CON CONTROL DE ACCESO BASADO EN ROLES (RBAC)
 # ==============================================================================
 
-# --- FLUJO GERENCIA ---
-@gerente_required
-def gerente_dashboard_view(request):
-    """Dashboard de métricas gerenciales exclusivo para GERENTE conectado a BD."""
-    from django.db.models import F, Q, Sum
+# --- FLUJO GERENCIA (SIG-543: SISTEMAS DE INFORMACIÓN GERENCIAL) ---
+def _calcular_metricas_gerenciales_sig(filtros=None):
+    """
+    Motor analítico ORM para SIG-543:
+    Procesa en tiempo real los tickets, escalamientos, intervenciones e inventario
+    para construir las 4 métricas obligatorias y devolverlas tanto al template como al endpoint JSON:
+    1. Cumplimiento de Acuerdos de Nivel de Servicio (SLA).
+    2. Volumen de escalamientos por modalidad de atención.
+    3. Distribución de carga de trabajo por técnico.
+    4. Tiempos medios de resolución (global y por técnico/prioridad).
+    """
+    from django.db.models import F, Q, Sum, Count
     from django.utils import timezone
     from datetime import timedelta
-    from tickets.models import Ticket
+    from catalogos.models import ModalidadAtencion, Prioridad, EstadoTicket
+    from tickets.models import Ticket, Escalamiento, Intervencion
     from inventario.models import MovimientoInventario
 
-    # 1. Alertas de Inventario Crítico y Movimientos Operativos de Salida
+    filtros = filtros or {}
+    modalidad_filtro = (filtros.get('modalidad') or '').strip()
+    tecnico_filtro = (filtros.get('tecnico') or '').strip()
+    prioridad_filtro = (filtros.get('prioridad') or '').strip()
+    periodo_filtro = (filtros.get('periodo') or '').strip()
+
+    estados_finales = ['RESUELTO', 'CERRADO', 'Resuelto', 'Cerrado']
+    ahora = timezone.now()
+    umbral_atraso = ahora - timedelta(hours=24)
+
+    # QuerySet base de Tickets desde el ORM de Django
+    tickets_qs = Ticket.objects.select_related('estado', 'prioridad', 'modalidad', 'tecnico_asignado')
+
+    if modalidad_filtro:
+        filtro_mod = Q(modalidad__nombre__iexact=modalidad_filtro)
+        if modalidad_filtro.isdigit():
+            filtro_mod |= Q(modalidad_id=int(modalidad_filtro))
+        tickets_qs = tickets_qs.filter(filtro_mod)
+
+    if tecnico_filtro and tecnico_filtro.isdigit():
+        tickets_qs = tickets_qs.filter(tecnico_asignado_id=int(tecnico_filtro))
+
+    if prioridad_filtro:
+        filtro_prio = Q(prioridad__nombre__iexact=prioridad_filtro)
+        if prioridad_filtro.isdigit():
+            filtro_prio |= Q(prioridad_id=int(prioridad_filtro))
+        tickets_qs = tickets_qs.filter(filtro_prio)
+
+    if periodo_filtro in ('7', '30', '90'):
+        dias = int(periodo_filtro)
+        tickets_qs = tickets_qs.filter(fecha_creacion__gte=ahora - timedelta(days=dias))
+
+    # 1. KPIs Globales: Cumplimiento SLA y Tiempos Medios de Resolución
+    total_tickets = tickets_qs.count()
+    tickets_abiertos_qs = tickets_qs.exclude(Q(estado__es_final=True) | Q(estado__nombre__in=estados_finales))
+    tickets_resueltos_qs = tickets_qs.filter(Q(estado__es_final=True) | Q(estado__nombre__in=estados_finales))
+
+    tickets_abiertos_count = tickets_abiertos_qs.count()
+    tickets_resueltos_count = tickets_resueltos_qs.count()
+    tickets_atrasados_global = tickets_abiertos_qs.filter(fecha_creacion__lt=umbral_atraso).count()
+    tickets_en_tiempo = max(0, total_tickets - tickets_atrasados_global)
+
+    if total_tickets > 0:
+        cumplimiento_pct = max(0, round((tickets_en_tiempo / total_tickets) * 100))
+    else:
+        cumplimiento_pct = 100
+
+    # Cálculo de Tiempos Medios de Resolución (en horas) a partir de fechas reales e intervenciones
+    tiempos_horas = []
+    for t in tickets_resueltos_qs:
+        inicio = t.fecha_asignacion or t.fecha_creacion
+        if inicio and t.fecha_cierre and t.fecha_cierre >= inicio:
+            horas = (t.fecha_cierre - inicio).total_seconds() / 3600.0
+            tiempos_horas.append(horas)
+
+    if not tiempos_horas:
+        # Si aún no hay diferencia en timestamps de cierre, usar minutos registrados en Intervencion
+        total_min_interv = Intervencion.objects.filter(ticket__in=tickets_qs).aggregate(s=Sum('tiempo_invertido_minutos'))['s'] or 0
+        if total_min_interv > 0 and max(1, tickets_resueltos_count) > 0:
+            tiempo_promedio_hrs = round((total_min_interv / 60.0) / max(1, tickets_resueltos_count), 1)
+        else:
+            tiempo_promedio_hrs = 0.0
+    else:
+        tiempo_promedio_hrs = round(sum(tiempos_horas) / len(tiempos_horas), 1)
+
+    # 2. Distribución de Carga de Trabajo por Técnico y Tiempo Medio Individual
+    tecnicos_qs = CustomUser.objects.filter(rol='TECNICO', is_active=True)
+    if tecnico_filtro and tecnico_filtro.isdigit():
+        tecnicos_qs = tecnicos_qs.filter(id=int(tecnico_filtro))
+
+    carga_tecnicos = []
+    for tec in tecnicos_qs:
+        tickets_tec = tickets_qs.filter(tecnico_asignado=tec)
+        total_tec = tickets_tec.count()
+        asignados_activos = tickets_tec.exclude(Q(estado__es_final=True) | Q(estado__nombre__in=estados_finales))
+        resueltos = tickets_tec.filter(Q(estado__es_final=True) | Q(estado__nombre__in=estados_finales))
+        atrasados = asignados_activos.filter(fecha_creacion__lt=umbral_atraso)
+
+        asignados_cnt = asignados_activos.count()
+        resueltos_cnt = resueltos.count()
+        atrasados_cnt = atrasados.count()
+        sla_tec = max(0, round(((total_tec - atrasados_cnt) / total_tec) * 100)) if total_tec > 0 else 100
+
+        # Tiempo medio de resolución del técnico (horas)
+        t_tec_hrs = []
+        for tt in resueltos:
+            ini = tt.fecha_asignacion or tt.fecha_creacion
+            if ini and tt.fecha_cierre and tt.fecha_cierre >= ini:
+                t_tec_hrs.append((tt.fecha_cierre - ini).total_seconds() / 3600.0)
+        if t_tec_hrs:
+            promedio_tec_hrs = round(sum(t_tec_hrs) / len(t_tec_hrs), 1)
+        else:
+            min_tec = Intervencion.objects.filter(tecnico=tec, ticket__in=tickets_qs).aggregate(s=Sum('tiempo_invertido_minutos'))['s'] or 0
+            promedio_tec_hrs = round((min_tec / 60.0) / max(1, resueltos_cnt), 1) if min_tec > 0 else 0.0
+
+        carga_tecnicos.append({
+            'id': tec.id,
+            'username': tec.username,
+            'nombre': tec.get_full_name() or tec.username,
+            'asignados': asignados_cnt,
+            'resueltos': resueltos_cnt,
+            'atrasados': atrasados_cnt,
+            'total': total_tec,
+            'cumplimiento_sla': sla_tec,
+            'tiempo_promedio_hrs': promedio_tec_hrs,
+        })
+
+    # 3. Volumen de Escalamientos por Modalidad (SIG-543)
+    escalamientos_qs = Escalamiento.objects.filter(ticket__in=tickets_qs).select_related('ticket__modalidad')
+    total_escalamientos = escalamientos_qs.count()
+
+    modalidades_db = list(ModalidadAtencion.objects.values_list('nombre', flat=True))
+    for mod_base in ['Presencial', 'Remoto', 'Taller']:
+        if mod_base not in modalidades_db:
+            modalidades_db.append(mod_base)
+
+    conteo_por_modalidad = {m: 0 for m in modalidades_db}
+    sin_modalidad_cnt = 0
+
+    for esc in escalamientos_qs:
+        nombre_mod = esc.ticket.modalidad.nombre if (esc.ticket and esc.ticket.modalidad) else 'Presencial'
+        conteo_por_modalidad[nombre_mod] = conteo_por_modalidad.get(nombre_mod, 0) + 1
+
+    escalamientos_por_modalidad = []
+    for nombre_mod, cant in conteo_por_modalidad.items():
+        pct = round((cant / total_escalamientos) * 100) if total_escalamientos > 0 else 0
+        escalamientos_por_modalidad.append({
+            'modalidad': nombre_mod,
+            'cantidad': cant,
+            'porcentaje': pct,
+        })
+
+    # 4. Alertas de Inventario Crítico y Movimientos Operativos de Salida
     repuestos_criticos = Repuesto.objects.filter(stock_actual__lte=F('stock_minimo')).order_by('stock_actual')
     movimientos_salida = MovimientoInventario.objects.filter(
         tipo_movimiento='SALIDA'
@@ -220,60 +360,104 @@ def gerente_dashboard_view(request):
         MovimientoInventario.objects.filter(tipo_movimiento='SALIDA').aggregate(total=Sum('cantidad'))['total'] or 0
     )
 
-    # 2. Carga de Trabajo por Técnico
-    tecnicos_qs = CustomUser.objects.filter(rol='TECNICO', is_active=True)
-    estados_finales = ['RESUELTO', 'CERRADO', 'Resuelto', 'Cerrado']
-    umbral_atraso = timezone.now() - timedelta(hours=24)
-
-    carga_tecnicos = []
-    for tec in tecnicos_qs:
-        tickets_tec = Ticket.objects.filter(tecnico_asignado=tec).select_related('estado')
-        asignados_activos = tickets_tec.exclude(Q(estado__es_final=True) | Q(estado__nombre__in=estados_finales))
-        resueltos = tickets_tec.filter(Q(estado__es_final=True) | Q(estado__nombre__in=estados_finales))
-        atrasados = asignados_activos.filter(fecha_creacion__lt=umbral_atraso)
-
-        carga_tecnicos.append({
-            'id': tec.id,
-            'nombre': tec.get_full_name() or tec.username,
-            'asignados': asignados_activos.count(),
-            'resueltos': resueltos.count(),
-            'atrasados': atrasados.count(),
-        })
-
-    # 3. KPIs Globales
-    todos_tickets = Ticket.objects.select_related('estado')
-    total_tickets = todos_tickets.count()
-    tickets_abiertos_qs = todos_tickets.exclude(Q(estado__es_final=True) | Q(estado__nombre__in=estados_finales))
-    tickets_resueltos_qs = todos_tickets.filter(Q(estado__es_final=True) | Q(estado__nombre__in=estados_finales))
-
-    tickets_abiertos_count = tickets_abiertos_qs.count()
-    tickets_atrasados_global = tickets_abiertos_qs.filter(fecha_creacion__lt=umbral_atraso).count()
-
-    if total_tickets > 0:
-        cumplimiento_pct = max(0, round(((total_tickets - tickets_atrasados_global) / total_tickets) * 100))
-    else:
-        cumplimiento_pct = 100
-
-    # Tiempo promedio de resolución en horas
-    tiempos_horas = []
-    for t in tickets_resueltos_qs:
-        inicio = t.fecha_asignacion or t.fecha_creacion
-        if inicio and t.fecha_cierre and t.fecha_cierre >= inicio:
-            horas = (t.fecha_cierre - inicio).total_seconds() / 3600.0
-            tiempos_horas.append(horas)
-
-    tiempo_promedio_hrs = round(sum(tiempos_horas) / len(tiempos_horas), 1) if tiempos_horas else 0.0
-
-    return render(request, 'gerencia/dashboard.html', {
-        'modulo': 'dashboard',
-        'usuario': request.user,
+    return {
+        'total_tickets': total_tickets,
+        'tickets_abiertos_count': tickets_abiertos_count,
+        'tickets_resueltos_count': tickets_resueltos_count,
+        'tickets_atrasados_global': tickets_atrasados_global,
+        'tickets_en_tiempo': tickets_en_tiempo,
+        'cumplimiento_pct': cumplimiento_pct,
+        'incumplimiento_pct': max(0, 100 - cumplimiento_pct),
+        'tiempo_promedio_hrs': tiempo_promedio_hrs,
+        'total_escalamientos': total_escalamientos,
+        'escalamientos_por_modalidad': escalamientos_por_modalidad,
+        'carga_tecnicos': carga_tecnicos,
         'repuestos_criticos': repuestos_criticos,
         'movimientos_salida': movimientos_salida,
         'total_repuestos_usados': total_repuestos_usados,
-        'carga_tecnicos': carga_tecnicos,
-        'tickets_abiertos_count': tickets_abiertos_count,
-        'cumplimiento_pct': cumplimiento_pct,
-        'tiempo_promedio_hrs': tiempo_promedio_hrs,
+        'modalidades_catalogo': ModalidadAtencion.objects.all(),
+        'prioridades_catalogo': Prioridad.objects.all(),
+        'tecnicos_catalogo': CustomUser.objects.filter(rol='TECNICO', is_active=True),
+        'filtros_activos': {
+            'modalidad': modalidad_filtro,
+            'tecnico': tecnico_filtro,
+            'prioridad': prioridad_filtro,
+            'periodo': periodo_filtro,
+        }
+    }
+
+
+@gerente_required
+def gerente_dashboard_view(request):
+    """Dashboard de métricas gerenciales (SIG-543) exclusivo para GERENTE conectado a BD y JSON."""
+    metricas = _calcular_metricas_gerenciales_sig(request.GET)
+
+    # Si el cliente solicita formato JSON explícito (?format=json o Accept: application/json)
+    if request.GET.get('format') == 'json' or 'application/json' in request.headers.get('Accept', ''):
+        return api_gerente_dashboard_metricas_view(request)
+
+    context = {
+        'modulo': 'dashboard',
+        'usuario': request.user,
+        **metricas,
+    }
+    return render(request, 'gerencia/dashboard.html', context)
+
+
+@gerente_required
+def api_gerente_dashboard_metricas_view(request):
+    """
+    Endpoint JSON dinámico para el Panel Administrativo Gerencial (SIG-543):
+    GET /api/v1/gerencia/dashboard-metricas/
+    Retorna desde el ORM de Django:
+    - cumplimiento_sla (% cumplimiento, en tiempo, atrasados, total)
+    - volumen_escalamientos_modalidad (lista por modalidad Presencial/Remoto/Taller y total)
+    - distribucion_carga_tecnicos (asignados, resueltos, atrasados, SLA y tiempo medio por técnico)
+    - tiempos_medios_resolucion (promedio global en horas)
+    - alertas_inventario (repuestos bajo stock mínimo y consumo operativo)
+    """
+    m = _calcular_metricas_gerenciales_sig(request.GET)
+    return JsonResponse({
+        'status': 'success',
+        'sig_module': 'SIG-543',
+        'filtros': m['filtros_activos'],
+        'data': {
+            'kpis': {
+                'total_tickets': m['total_tickets'],
+                'tickets_abiertos': m['tickets_abiertos_count'],
+                'tickets_resueltos': m['tickets_resueltos_count'],
+                'tickets_atrasados': m['tickets_atrasados_global'],
+                'cumplimiento_sla_pct': m['cumplimiento_pct'],
+                'incumplimiento_sla_pct': m['incumplimiento_pct'],
+                'tiempo_medio_resolucion_hrs': m['tiempo_promedio_hrs'],
+                'total_escalamientos': m['total_escalamientos'],
+                'total_repuestos_usados': m['total_repuestos_usados'],
+            },
+            'cumplimiento_sla': {
+                'cumplimiento_pct': m['cumplimiento_pct'],
+                'incumplimiento_pct': m['incumplimiento_pct'],
+                'en_tiempo': m['tickets_en_tiempo'],
+                'atrasados': m['tickets_atrasados_global'],
+            },
+            'volumen_escalamientos_modalidad': m['escalamientos_por_modalidad'],
+            'distribucion_carga_tecnicos': m['carga_tecnicos'],
+            'tiempos_medios_resolucion': {
+                'global_horas': m['tiempo_promedio_hrs'],
+                'por_tecnico': [
+                    {'tecnico': t['nombre'], 'horas': t['tiempo_promedio_hrs']}
+                    for t in m['carga_tecnicos']
+                ],
+            },
+            'alertas_inventario': [
+                {
+                    'codigo': r.codigo,
+                    'nombre': r.nombre,
+                    'stock_actual': r.stock_actual,
+                    'stock_minimo': r.stock_minimo,
+                }
+                for r in m['repuestos_criticos']
+            ]
+        }
     })
 
 

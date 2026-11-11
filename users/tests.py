@@ -267,3 +267,126 @@ class RBACTestCase(TestCase):
         resp_claro = self.client.get(reverse('cliente_historico'))
         self.assertContains(resp_claro, 'data-user-theme="light"')
         self.assertContains(resp_claro, 'aria-pressed="false"')
+
+    # --------------------------------------------------------------------------
+    # 6. Navegación 100% por Teclado, Focus-Ring y Prevención de Trampas (ISO 9241-11)
+    # --------------------------------------------------------------------------
+    def test_navegacion_teclado_focus_ring_y_sin_trampas_iso_9241_11(self):
+        """
+        Valida los Criterios de Aceptación de la norma ISO 9241-11:
+        1. Navegación 100% por teclado (Skip-link #skipToContent, soporte de ArrowDown/ArrowUp/Enter/Escape y atajos Alt+M, Alt+I, Ctrl+Enter).
+        2. Visibilidad del Foco (focus-ring explícito en todos los botones, inputs, textareas, selects y enlaces).
+        3. Prevención de Trampas de Foco (ventana emergente #modalAsistenteIA con salida por Escape y retorno de foco al elemento disparador).
+        """
+        self.client.login(username='cliente_test', password='Password123*')
+        resp = self.client.get(reverse('crear_reporte'))
+        self.assertEqual(resp.status_code, 200)
+
+        # 1. Enlace de salto al contenido principal y atajos de teclado
+        self.assertContains(resp, 'id="skipToContent"')
+        self.assertContains(resp, 'id="mainContent"')
+        self.assertContains(resp, "e.key === 'ArrowDown'")
+        self.assertContains(resp, "e.key === 'ArrowUp'")
+        self.assertContains(resp, "Alt+I")
+        self.assertContains(resp, "Ctrl+Enter")
+
+        # 2. Visibilidad del indicador de foco activo (focus-ring) en todos los controles
+        self.assertContains(resp, "button:focus-visible")
+        self.assertContains(resp, "input:focus-visible")
+        self.assertContains(resp, "textarea:focus-visible")
+        self.assertContains(resp, "a:focus-visible")
+        self.assertContains(resp, "outline: 3px solid #D97706 !important")
+
+        # 3. Prevención de trampas de foco en la ventana emergente del Asistente de IA
+        self.assertContains(resp, 'id="modalAsistenteIA"')
+        self.assertContains(resp, 'id="btnCerrarModalIAX"')
+        self.assertContains(resp, 'id="btnIgnorarModalIA"')
+        self.assertContains(resp, 'id="btnConfirmarModalIA"')
+        self.assertContains(resp, 'window.cerrarModalIA = cerrarModalIA')
+        self.assertContains(resp, "e.key === 'Escape'")
+
+    # --------------------------------------------------------------------------
+    # 7. Dashboard Administrativo Gerencial (SIG-543): ORM Real, JSON y Filtros
+    # --------------------------------------------------------------------------
+    def test_dashboard_gerencial_sig_543_orm_json_y_filtros_responsivos(self):
+        """
+        Valida los 3 Criterios de Aceptación del Dashboard Gerencial (SIG-543):
+        1. Métricas Obligatorias: Cumplimiento de SLA, Volumen de Escalamientos por Modalidad,
+           Distribución de Carga de Trabajo por Técnico y Tiempos Medios de Resolución.
+        2. Consumo de Datos Reales desde el ORM de Django y respuesta JSON dinámica
+           (/api/v1/gerencia/dashboard-metricas/).
+        3. Adaptabilidad Responsiva: Panel de filtros agrupado en cabecera desplegable
+           (#btnToggleFiltrosDashboard y #panelFiltrosColapsable con hidden xl:block) en tableta (768px).
+        """
+        from django.utils import timezone
+        from datetime import timedelta
+        from catalogos.models import Categoria, Prioridad, EstadoTicket, ModalidadAtencion
+        from tickets.models import Equipo, Ticket, Escalamiento
+
+        cat = Categoria.objects.create(nombre='Redes')
+        prio = Prioridad.objects.create(nombre='Alta', nivel=3)
+        est_resuelto = EstadoTicket.objects.create(nombre='RESUELTO', es_final=True)
+        mod_remoto = ModalidadAtencion.objects.create(nombre='Remoto')
+        eq = Equipo.objects.create(serial='SN-SIG-543', marca='Cisco', modelo='Catalyst')
+
+        ahora = timezone.now()
+        t_sig = Ticket.objects.create(
+            folio='INC-SIG-001',
+            asunto='Caída de enlace WAN',
+            descripcion='Enlace principal sin respuesta',
+            usuario=self.cliente,
+            tecnico_asignado=self.tecnico,
+            equipo=eq,
+            categoria=cat,
+            prioridad=prio,
+            estado=est_resuelto,
+            modalidad=mod_remoto,
+            fecha_asignacion=ahora - timedelta(hours=4),
+            fecha_cierre=ahora,
+        )
+        Escalamiento.objects.create(
+            ticket=t_sig,
+            tecnico_origen=self.tecnico,
+            grupo_o_tecnico_destino='Nivel 3 - Telecomunicaciones',
+            motivo='Requiere reconfiguración BGP'
+        )
+
+        self.client.login(username='gerente_test', password='Password123*')
+
+        # A) Verificar vista HTML y adaptabilidad responsiva del panel de filtros
+        resp_html = self.client.get(reverse('gerente_dashboard'))
+        self.assertEqual(resp_html.status_code, 200)
+        self.assertContains(resp_html, 'id="btnToggleFiltrosDashboard"')
+        self.assertContains(resp_html, 'id="panelFiltrosColapsable"')
+        self.assertContains(resp_html, 'hidden xl:block')
+        self.assertContains(resp_html, 'id="chartCumplimientoSLA"')
+        self.assertContains(resp_html, 'id="chartEscalamientosModalidad"')
+        self.assertContains(resp_html, 'id="chartCargaTecnicos"')
+        self.assertContains(resp_html, 'id="chartTiemposResolucion"')
+
+        # B) Verificar endpoint JSON dinámico con datos reales del ORM
+        resp_json = self.client.get(reverse('api_gerente_dashboard_metricas'))
+        self.assertEqual(resp_json.status_code, 200)
+        payload = resp_json.json()
+        self.assertEqual(payload['status'], 'success')
+        self.assertEqual(payload['sig_module'], 'SIG-543')
+
+        data = payload['data']
+        self.assertEqual(data['kpis']['total_tickets'], 1)
+        self.assertEqual(data['kpis']['cumplimiento_sla_pct'], 100)
+        self.assertEqual(data['kpis']['tiempo_medio_resolucion_hrs'], 4.0)
+        self.assertEqual(data['kpis']['total_escalamientos'], 1)
+
+        # Verificar escalamiento en modalidad Remoto
+        mod_remoto_item = next(
+            (m for m in data['volumen_escalamientos_modalidad'] if m['modalidad'] == 'Remoto'),
+            None
+        )
+        self.assertIsNotNone(mod_remoto_item)
+        self.assertEqual(mod_remoto_item['cantidad'], 1)
+        self.assertEqual(mod_remoto_item['porcentaje'], 100)
+
+        # Verificar distribución de carga por técnico
+        self.assertEqual(len(data['distribucion_carga_tecnicos']), 1)
+        self.assertEqual(data['distribucion_carga_tecnicos'][0]['resueltos'], 1)
+        self.assertEqual(data['distribucion_carga_tecnicos'][0]['tiempo_promedio_hrs'], 4.0)

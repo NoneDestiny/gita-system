@@ -150,10 +150,42 @@
             color: #ffffff !important;
         }
 
-        /* Accesibilidad: Focus ring explícito para navegación por teclado (WCAG 2.1 AA) */
-        *:focus-visible {
-            outline: 3px solid #D97706;
-            outline-offset: 2px;
+        /* Accesibilidad ISO 9241-11 & WCAG 2.1 AA: Indicador de foco activo (focus-ring) en TODOS los botones, insumos de texto y enlaces */
+        a:focus,
+        a:focus-visible,
+        button:focus,
+        button:focus-visible,
+        input:focus,
+        input:focus-visible,
+        textarea:focus,
+        textarea:focus-visible,
+        select:focus,
+        select:focus-visible,
+        [role="button"]:focus,
+        [role="button"]:focus-visible,
+        [role="option"]:focus,
+        [role="option"]:focus-visible,
+        [tabindex]:focus-visible {
+            outline: 3px solid #D97706 !important;
+            outline-offset: 2px !important;
+            box-shadow: 0 0 0 4px rgba(217, 119, 6, 0.35) !important;
+        }
+
+        /* Enlace de salto directo al contenido principal (Skip-to-content) para navegación rápida por teclado */
+        .skip-to-content-link {
+            position: fixed;
+            top: -100px;
+            left: 1rem;
+            z-index: 9999;
+            background-color: #d47c35;
+            color: #111827;
+            font-weight: 700;
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.5rem;
+            transition: top 0.2s ease-in-out;
+        }
+        .skip-to-content-link:focus {
+            top: 1rem;
         }
 
         /* Ergonomía Táctil (WCAG 2.1 / Mobile-First): Área de toque mínima de 44x44 píxeles */
@@ -213,6 +245,11 @@
 </head>
 <body class="bg-[#303338] text-gray-200 min-h-screen w-full max-w-full flex flex-col md:flex-row overflow-x-hidden relative text-base">
 
+    <!-- Enlace de Salto Rápido (Skip Link) para Navegación 100% por Teclado (ISO 9241-11) -->
+    <a href="#mainContent" id="skipToContent" class="skip-to-content-link" aria-label="Saltar directamente al contenido principal">
+        Saltar al contenido principal (Tab)
+    </a>
+
     <!-- ======================================================================= -->
     <!-- 1. CABECERA MÓVIL (375px - < 768px): Disposición vertical 1 columna     -->
     <!-- ======================================================================= -->
@@ -248,12 +285,12 @@
 
         <nav aria-label="Menú principal del sistema" class="flex-1 p-5 xl:p-6 overflow-y-auto">
             <div class="relative w-full" id="wrapperDesplegable">
-                <button id="btnMenuPrincipal" type="button" aria-expanded="false" aria-controls="contenedorListas" class="w-full flex items-center justify-between bg-[#d9d9d9] text-gray-900 font-bold px-4 py-3 rounded min-h-[44px] min-w-[44px] hover:bg-gray-300 transition-colors focus:ring-2 focus:ring-orange-500 shadow-md">
+                <button id="btnMenuPrincipal" type="button" aria-expanded="false" aria-controls="contenedorListas" aria-label="Abrir o cerrar menú principal de módulos (Atajo: Alt + M)" title="Menú Principal (Alt + M)" class="w-full flex items-center justify-between bg-[#d9d9d9] text-gray-900 font-bold px-4 py-3 rounded min-h-[44px] min-w-[44px] hover:bg-gray-300 transition-colors focus:ring-2 focus:ring-orange-500 shadow-md">
                     <div class="flex items-center gap-2">
-                        <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                        <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                         <span>Menú Principal</span>
                     </div>
-                    <svg id="iconoDesplegable" class="w-5 h-5 transition-transform duration-200 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    <svg id="iconoDesplegable" class="w-5 h-5 transition-transform duration-200 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                 </button>
 
                 <!-- Bloque de Menú Dinámico por Rol (RBAC) -->
@@ -325,7 +362,7 @@
     <!-- ======================================================================= -->
     <!-- 3. CONTENIDO PRINCIPAL SEMÁNTICO (Columna principal adaptable, Zoom 200%)-->
     <!-- ======================================================================= -->
-    <main class="flex-1 flex flex-col min-h-screen min-w-0 w-full overflow-y-auto overflow-x-hidden relative pb-8">
+    <main id="mainContent" tabindex="-1" aria-label="Contenido operativo principal" class="flex-1 flex flex-col min-h-screen min-w-0 w-full overflow-y-auto overflow-x-hidden relative pb-8">
         
         <!-- Cabecera Tableta (768px) y Escritorio (1280px+) -->
         <header class="hidden md:grid grid-cols-1 lg:grid-cols-3 items-center gap-3 p-4 lg:p-6 bg-[#2a2d31]/40 border-b border-gray-700/50 shrink-0">
@@ -378,17 +415,66 @@
             const contenedorListas = document.getElementById('contenedorListas');
             const iconoDesplegable = document.getElementById('iconoDesplegable');
             const wrapperDesplegable = document.getElementById('wrapperDesplegable');
+            let ultimoElementoEnfocado = null;
+
+            function obtenerItemsMenu() {
+                if (!contenedorListas) return [];
+                return Array.from(contenedorListas.querySelectorAll('a[href], button:not([disabled])'));
+            }
+
+            function abrirMenuPrincipal(enfocarPrimero = false) {
+                if (!contenedorListas || !btnMenuPrincipal) return;
+                contenedorListas.classList.remove('hidden');
+                contenedorListas.classList.add('flex');
+                if (iconoDesplegable) iconoDesplegable.classList.add('rotar-180');
+                btnMenuPrincipal.setAttribute('aria-expanded', 'true');
+                if (enfocarPrimero) {
+                    const items = obtenerItemsMenu();
+                    if (items.length > 0) items[0].focus();
+                }
+            }
 
             if (btnMenuPrincipal && contenedorListas) {
                 btnMenuPrincipal.addEventListener('click', (e) => {
                     e.stopPropagation();
                     if (contenedorListas.classList.contains('hidden')) {
-                        contenedorListas.classList.remove('hidden');
-                        contenedorListas.classList.add('flex');
-                        if (iconoDesplegable) iconoDesplegable.classList.add('rotar-180');
-                        btnMenuPrincipal.setAttribute('aria-expanded', 'true');
+                        abrirMenuPrincipal(false);
                     } else {
                         cerrarMenuPrincipal();
+                    }
+                });
+
+                // Navegación 100% por teclado en Menú Principal (Flechas Arriba/Abajo, Enter, Escape)
+                btnMenuPrincipal.addEventListener('keydown', (e) => {
+                    if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        abrirMenuPrincipal(true);
+                    } else if (e.key === 'Escape') {
+                        cerrarMenuPrincipal();
+                        btnMenuPrincipal.focus();
+                    }
+                });
+
+                contenedorListas.addEventListener('keydown', (e) => {
+                    const items = obtenerItemsMenu();
+                    if (!items.length) return;
+                    const idx = items.indexOf(document.activeElement);
+                    if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        const nextIdx = idx < items.length - 1 ? idx + 1 : 0;
+                        items[nextIdx].focus();
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        if (idx > 0) {
+                            items[idx - 1].focus();
+                        } else {
+                            cerrarMenuPrincipal();
+                            btnMenuPrincipal.focus();
+                        }
+                    } else if (e.key === 'Escape') {
+                        e.preventDefault();
+                        cerrarMenuPrincipal();
+                        btnMenuPrincipal.focus();
                     }
                 });
             }
@@ -497,6 +583,62 @@
                         // Si ocurre un error de red, localStorage mantiene la preferencia local
                     }
                 });
+            });
+
+            // ===================================================================
+            // ATAJOS DE TECLADO RÁPIDOS Y PREVENCIÓN GLOBAL DE TRAMPAS DE FOCO
+            // (Norma ISO 9241-11: Reducción de Carga Cognitiva)
+            // ===================================================================
+            document.addEventListener('keydown', (e) => {
+                // 1. Escape cierra cualquier ventana emergente, modal, asistente IA o menú desplegable
+                //    y restaura el foco al elemento disparador (Prevención de Trampas de Foco)
+                if (e.key === 'Escape') {
+                    // Cerrar menú principal si está abierto
+                    if (contenedorListas && !contenedorListas.classList.contains('hidden')) {
+                        cerrarMenuPrincipal();
+                        if (btnMenuPrincipal) btnMenuPrincipal.focus();
+                    }
+                    // Cerrar sidebar móvil si está abierto
+                    if (sidebar && !sidebar.classList.contains('-translate-x-full') && window.innerWidth < 768) {
+                        toggleSidebar();
+                        if (toggleMobile) toggleMobile.focus();
+                    }
+                    // Cerrar cualquier modal global o ventana emergente del Asistente de IA
+                    if (typeof window.cerrarModal === 'function') {
+                        window.cerrarModal();
+                    }
+                    if (typeof window.cerrarModalIA === 'function') {
+                        window.cerrarModalIA();
+                    }
+                    if (ultimoElementoEnfocado && typeof ultimoElementoEnfocado.focus === 'function') {
+                        ultimoElementoEnfocado.focus();
+                    }
+                }
+
+                // 2. Atajos rápidos con Alt (Alt+M: Menú, Alt+N: Nuevo Reporte, Alt+H: Histórico, Alt+B: Buscar, Alt+T: Tema)
+                if (e.altKey && !e.ctrlKey && !e.metaKey) {
+                    const key = e.key.toLowerCase();
+                    if (key === 'm' && btnMenuPrincipal) {
+                        e.preventDefault();
+                        abrirMenuPrincipal(true);
+                    } else if (key === 't' && themeButtons.length > 0) {
+                        e.preventDefault();
+                        themeButtons[0].click();
+                        themeButtons[0].focus();
+                    } else if (key === 'b') {
+                        const buscador = document.getElementById('inputBusqueda') || document.getElementById('filtroPredictivoSerial');
+                        if (buscador) {
+                            e.preventDefault();
+                            buscador.focus();
+                        }
+                    } else if (key === 'n') {
+                        e.preventDefault();
+                        window.location.href = "{% url 'crear_reporte' %}";
+                    } else if (key === 'h') {
+                        e.preventDefault();
+                        window.location.href = "{% if request.user.rol == 'TECNICO' %}{% url 'tecnico_tickets_asignados' %}{% elif request.user.rol == 'GERENTE' %}{% url 'gerente_dashboard' %}{% else %}{% url 'cliente_historico' %}{% endif %}";
+                    }
+                }
             });
         });
     </script>
