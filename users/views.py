@@ -10,6 +10,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_POST, require_http_methods
 from django.core.exceptions import PermissionDenied
+from inventario.models import Repuesto
 
 from .models import CustomUser
 from .forms import CustomAuthenticationForm, CustomAdminAuthenticationForm
@@ -248,12 +249,64 @@ def gerente_dashboard_view(request):
     })
 
 
+from inventario.models import Repuesto
+
 @gerente_required
 def gerente_inventario_view(request):
-    """Gestión de inventario de repuestos para GERENTE."""
+    if request.method == 'POST':
+        accion = request.POST.get('accion')
+        codigo = request.POST.get('codigo')
+        
+        # El HTML manda 'name="descripcion"', lo atrapamos y lo guardamos en 'nombre'
+        # ya que es el campo obligatorio en tu modelo.
+        nombre_repuesto = request.POST.get('descripcion')
+        
+        try:
+            stock = int(request.POST.get('stock', 0))
+            stock_min = int(request.POST.get('stock_min', 0))
+        except ValueError:
+            messages.error(request, "Los valores de stock deben ser números válidos.")
+            return redirect('gerente_inventario') 
+
+        if accion == 'crear':
+            try:
+                if Repuesto.objects.filter(codigo=codigo).exists():
+                    messages.error(request, f"Ya existe un repuesto con el código {codigo}.")
+                else:
+                    Repuesto.objects.create(
+                        codigo=codigo,
+                        nombre=nombre_repuesto,  # <-- CORREGIDO
+                        stock_actual=stock,      # <-- CORREGIDO
+                        stock_minimo=stock_min   # <-- CORREGIDO
+                    )
+                    messages.success(request, "Repuesto agregado exitosamente.")
+            except Exception as e:
+                print(f"❌ ERROR AL CREAR: {e}")
+                messages.error(request, f"Error interno: {str(e)}")
+
+        elif accion == 'editar':
+            try:
+                repuesto = Repuesto.objects.get(codigo=codigo)
+                repuesto.nombre = nombre_repuesto  # <-- CORREGIDO
+                repuesto.stock_actual = stock      # <-- CORREGIDO
+                repuesto.stock_minimo = stock_min  # <-- CORREGIDO
+                repuesto.save()
+                messages.success(request, "Repuesto actualizado correctamente.")
+            except Repuesto.DoesNotExist:
+                messages.error(request, "El repuesto que intentas editar no existe.")
+            except Exception as e:
+                print(f"❌ ERROR AL EDITAR: {e}")
+                messages.error(request, f"Error interno: {str(e)}")
+
+        return redirect('gerente_inventario')
+
+    # 2. MOSTRAR LA PÁGINA NORMALMENTE (GET)
+    repuestos_lista = Repuesto.objects.all().order_by('codigo')
+    
     return render(request, 'gerencia/inventario.html', {
         'modulo': 'inventario',
-        'usuario': request.user
+        'usuario': request.user,
+        'repuestos': repuestos_lista
     })
 
 

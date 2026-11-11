@@ -1,33 +1,24 @@
 # Changelog de GITA
 
 ## [v0.3.0] - 2026-11-06
+**Autor:** Manuel
 
-# 🚀 Release Notes: Arquitectura de Base de Datos (BD-03 a BD-06)
+### 🚀 Arquitectura de Base de Datos Completa (BD-03 a BD-06)
+El repositorio entra en fase de estabilidad de datos en PostgreSQL y está listo para la integración con el frontend.
 
-Se ha finalizado la estructuración del backend en PostgreSQL. El repositorio entra en fase de estabilidad de datos y está listo para la integración con las vistas (Frontend).
+#### ✨ Añadido
+- **Tickets & Equipos:** Entidades con autogeneración de folios (BD-03).
+- **Trazabilidad CIA:** Modelos inmutables para Intervención, Escalamiento y Auditoría (BD-04).
+- **Inventario:** Entidad Repuesto con validación matemática de stock (BD-05).
+- **Fixtures:** Script `generar_mock.py` y archivo maestro `datos_iniciales.json` (BD-06).
 
-## 🛑 1. Cambios Globales y Configuraciones (settings.py)
-* **ELIMINADO:** Se eliminó el archivo `db.sqlite3` y su uso quedó deprecado.
-* **MODIFICADO:** Se forzó estrictamente el motor `django.db.backends.postgresql` en `settings.py`, eliminando condicionales. Ahora depende 100% de las variables del `.env` (`DB_NAME`, `DB_USER`, `DB_PASSWORD`, etc.).
-* **AÑADIDO:** Se configuraron las variables `MEDIA_URL = '/media/'` y `MEDIA_ROOT` para habilitar la carga local de evidencias.
+#### 🔧 Modificado
+- **Configuración (`settings.py`):** Forzado el motor de PostgreSQL y la integración estricta con el archivo `.env`.
 
-## 🎫 2. Módulo de Tickets y Trazabilidad (apps: tickets)
-* **AÑADIDO (BD-03):** Entidades `Equipo` (gestión de hardware) y `Ticket`. 
-  * *Regla de Negocio:* El `Ticket` autogenera un folio secuencial (Ej: TK-00001) al guardarse.
-  * *Relaciones:* Se usó `on_delete=models.PROTECT` en llaves foráneas críticas (usuarios, catálogos) para evitar pérdida de históricos.
-* **AÑADIDO (BD-04):** Entidades satélite para la Tríada CIA (Confidencialidad, Integridad, Disponibilidad).
-  * `Evidencia`: Incorpora validación de seguridad a nivel de servidor (Solo JPG/PNG/JPEG, límite de 5MB).
-  * `Intervencion`, `Escalamiento`, `Asignacion`, `CambioEstado`: Cuentan con *timestamps* inmutables para cálculos de SLA en el futuro dashboard.
-  * `Auditoria`: Modelo de logs. **Nota para admin.py:** Se sobreescribieron los permisos `has_change_permission` y `has_delete_permission` dejándolo en "Solo Lectura" absoluto.
+#### 🗑️ Eliminado
+- **Bases Locales:** Depreciación y eliminación absoluta del archivo `db.sqlite3`.
 
-## 📦 3. Módulo de Inventario (apps: inventario)
-* **AÑADIDO (BD-05):** Entidades `Repuesto` y `MovimientoInventario`.
-  * *Lógica Matemática:* Se sobreescribió el método `save()` en `MovimientoInventario`. Suma o resta automáticamente el `stock_actual` de la tabla `Repuesto` al registrar un nuevo movimiento y lanza `ValidationError` para evitar stock negativo.
-  * *Regla de Negocio (Conchas de mango):* Si el movimiento es "ENTRADA", bloquea la vinculación a un ticket (es administrativo). Si es "SALIDA", hace obligatorio vincular un ticket de justificación.
-
-## 📊 4. Datos Iniciales y Pruebas (Fixtures)
-* **AÑADIDO (BD-06):** Comando personalizado `generar_mock` (`tickets/management/commands/generar_mock.py`) que fabrica 50 tickets con fechas aleatorias en el pasado para poblar el Dashboard.
-* **AÑADIDO:** Archivo maestro `fixtures/datos_iniciales.json` con la exportación completa de catálogos, equipos, usuarios (con contraseña `Admin123$`) y los 50 tickets.
+---
 
 ### 📝 Guía de Sincronización de Datos (Para el Equipo)
 
